@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
-    <id>Harbour.RedisSessionStateStore</id>
+    <id>NHibernate.Caches.Redis</id>
     <version>1.0.0.0</version>
     <authors>Adrian Phinney</authors>
     <!--<licenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</licenseUrl>-->
