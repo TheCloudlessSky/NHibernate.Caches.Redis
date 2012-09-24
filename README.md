@@ -18,7 +18,7 @@ Configure NHibernate to use the custom cache provider:
 
 ```xml
 <property name="cache.use_second_level_cache">true</property>
-<property name="cache.use_query_cache" >true</property>
+<property name="cache.use_query_cache">true</property>
 <property name="cache.provider_class">NHibernate.Caches.Redis.RedisCacheProvider, 
     NHibernate.Caches.Redis</property>
 ```
