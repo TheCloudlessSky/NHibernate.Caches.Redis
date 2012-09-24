@@ -14,8 +14,17 @@ Installation
 Usage
 -----
 
+Configure NHibernate to use the custom cache provider:
+
+```xml
+<property name="cache.use_second_level_cache">true</property>
+<property name="cache.use_query_cache" >true</property>
+<property name="cache.provider_class">NHibernate.Caches.Redis.RedisCacheProvider, 
+    NHibernate.Caches.Redis</property>
+```
+
 Set the `IRedisClientsManager` (pooled, basic, etc) on the `RedisCacheProvider`
-before creating your `ISessionFactory`:
+*before* creating your `ISessionFactory`:
 
 ```csharp
 // Or use your IoC container to wire this up.
@@ -29,3 +38,5 @@ using (var sessionFactory = ...)
 
 clientManager.Dispose();
 ```
+
+Happy caching!
