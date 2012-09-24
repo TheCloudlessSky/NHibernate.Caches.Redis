@@ -15,8 +15,8 @@ namespace NHibernate.Caches.Redis
         private const string CacheNamePrefix = "NHibernate-Cache:";
 
         private static readonly IInternalLogger log;
-        private static Dictionary<object, string> acquiredLocks = new Dictionary<object, string>();
 
+        private readonly Dictionary<object, string> acquiredLocks = new Dictionary<object, string>();
         private readonly ISerializer serializer;
         private readonly IRedisClientsManager clientManager;
         private readonly int expirySeconds;
