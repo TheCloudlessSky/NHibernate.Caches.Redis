@@ -43,7 +43,7 @@ namespace NHibernate.Caches.Redis
             this.clientManager = clientManager.ThrowIfNull("clientManager");
             this.RegionName = regionName.ThrowIfNull("regionName");
 
-            this.expirySeconds = PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, 300);
+            this.expirySeconds = PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, 300 /* 5 minutes */);
             log.DebugFormat("using expiration : {0} seconds", this.expirySeconds);
 
             var regionPrefix = PropertiesHelper.GetString(Cfg.Environment.CacheRegionPrefix, properties, null);
@@ -189,33 +189,20 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                List<string> keysToDelete = null;
-
                 using (var client = this.clientManager.GetClient())
+                using (var transaction = client.CreateTransaction())
                 {
                     // Update to a new generation.
-                    using (var transaction = client.CreateTransaction())
-                    {
-                        transaction.QueueCommand(r =>
-                            r.Increment(generationKey, 1),
-                            x => CacheNamespace.SetGeneration(x));
+                    transaction.QueueCommand(r =>
+                        r.Increment(generationKey, 1),
+                        x => CacheNamespace.SetGeneration(x));
 
-                        transaction.QueueCommand(
-                            r => r.GetAllItemsFromSet(globalKeysKey).ToList(),
-                            x => keysToDelete = x);
+                    // Empty the set of current keys for this region.
+                    // NOTE: The actual cached objects will eventually expire.
+                    transaction.QueueCommand(
+                        r => r.Remove(globalKeysKey));
 
-                        transaction.Commit();
-                    }
-
-                    log.DebugFormat("running eager garbage collection : {0}", generationKey);
-
-                    // Remove the old generation's cached values.
-                    using (var transaction = client.CreateTransaction())
-                    {
-                        transaction.QueueCommand(r => r.Remove(globalKeysKey));
-                        transaction.QueueCommand(r => r.RemoveAll(keysToDelete));
-                        transaction.Commit();
-                    }
+                    transaction.Commit();
                 }
             }
             catch (Exception)

@@ -179,7 +179,7 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        public void Clear_should_remove_all_items_for_this_region()
+        public void Clear_update_generation_and_clear_keys_for_this_region()
         {
             // Arrange
             var cache = new RedisCache("region", this.ClientManager);
@@ -190,7 +190,7 @@ namespace NHibernate.Caches.Redis.Tests
             var oldKey2 = cache.CacheNamespace.GlobalCacheKey(2);
             var oldKey3 = cache.CacheNamespace.GlobalCacheKey(3);
 
-            var oldGlobalKeysKey = cache.CacheNamespace.GetGlobalKeysKey();
+            var globalKeysKey = cache.CacheNamespace.GetGlobalKeysKey();
 
             // Act
             cache.Clear();
@@ -202,11 +202,17 @@ namespace NHibernate.Caches.Redis.Tests
             Assert.Null(Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(1)));
             Assert.Null(Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(2)));
             Assert.Null(Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(3)));
+            
+            // List of keys for this region was cleared.
+            Assert.Null(Redis.GetValue(globalKeysKey));
 
-            // Old keys were removed.
-            Assert.Null(Redis.GetValue(oldKey1));
-            Assert.Null(Redis.GetValue(oldKey2));
-            Assert.Null(Redis.GetValue(oldKey3));
+            // The old values will expire automatically.
+            var ttl1 = Redis.GetTimeToLive(oldKey1);
+            Assert.True(ttl1 <= TimeSpan.FromMinutes(5));
+            var ttl2 = Redis.GetTimeToLive(oldKey2);
+            Assert.True(ttl2 <= TimeSpan.FromMinutes(5));
+            var ttl3 = Redis.GetTimeToLive(oldKey3);
+            Assert.True(ttl3 <= TimeSpan.FromMinutes(5));
         }
 
         [Fact]
