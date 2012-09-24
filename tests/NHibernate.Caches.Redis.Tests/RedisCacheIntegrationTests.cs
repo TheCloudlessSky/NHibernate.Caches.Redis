@@ -7,6 +7,7 @@ using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using Xunit;
 using NHibernate.Tool.hbm2ddl;
+using System.IO;
 
 namespace NHibernate.Caches.Redis.Tests
 {
@@ -18,12 +19,13 @@ namespace NHibernate.Caches.Redis.Tests
         {
             RedisCacheProvider.InternalSetClientManager(this.ClientManager);
 
+            if (File.Exists("tests.db")) { File.Delete("tests.db"); }
+
             if (configuration == null)
             {
                 configuration = Fluently.Configure()
                     .Database(
-                        MsSqlConfiguration.MsSql2008
-                        .ConnectionString("Data Source=(local)\\SQLExpress;Initial Catalog=People;Integrated Security=SSPI;")
+                        SQLiteConfiguration.Standard.UsingFile("tests.db")
                     )
                     .Mappings(m =>
                     {
