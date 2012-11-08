@@ -57,6 +57,16 @@ configure each cache region:
 </nhibernateRedisCache>
 ```
 
+Changelog
+---------
+
+**1.1.0**
+- Added configuration section for customizing the cache regions.
+- Added sample project.
+
+**1.0.0**
+- Initial release.
+
 ---
 
 Happy caching!
