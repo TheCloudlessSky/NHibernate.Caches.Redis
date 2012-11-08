@@ -22,6 +22,8 @@ namespace NHibernate.Caches.Redis
         private readonly int expirySeconds;
         private readonly TimeSpan lockTimeout = TimeSpan.FromSeconds(30);
 
+        private const int DefaultExpiry = 300 /*5 minutes*/;
+
         public string RegionName { get; private set; }
         public RedisNamespace CacheNamespace { get; private set; }
         public int Timeout { get { return Timestamper.OneMs * 60000; } }
@@ -32,18 +34,21 @@ namespace NHibernate.Caches.Redis
         }
 
         public RedisCache(string regionName, IRedisClientsManager clientManager)
-            : this(regionName, new Dictionary<string, string>(), clientManager)
+            : this(regionName, new Dictionary<string, string>(), null, clientManager)
         {
 
         }
 
-        public RedisCache(string regionName, IDictionary<string, string> properties, IRedisClientsManager clientManager)
+        public RedisCache(string regionName, IDictionary<string, string> properties, RedisCacheElement element, IRedisClientsManager clientManager)
         {
             this.serializer = new ObjectSerializer();
             this.clientManager = clientManager.ThrowIfNull("clientManager");
             this.RegionName = regionName.ThrowIfNull("regionName");
 
-            this.expirySeconds = PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, 300 /* 5 minutes */);
+            this.expirySeconds = element != null 
+                ? (int)element.Expiration.TotalSeconds
+                : PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, DefaultExpiry);
+
             log.DebugFormat("using expiration : {0} seconds", this.expirySeconds);
 
             var regionPrefix = PropertiesHelper.GetString(Cfg.Environment.CacheRegionPrefix, properties, null);

@@ -55,6 +55,7 @@
       <HintPath>..\..\packages\ServiceStack.Text.3.9.11\lib\net35\ServiceStack.Text.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -69,7 +70,10 @@
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCache.cs" />
+    <Compile Include="RedisCacheElement.cs" />
     <Compile Include="RedisCacheProvider.cs" />
+    <Compile Include="RedisCacheProviderSection.cs" />
+    <Compile Include="RedisCacheElementCollection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -16,6 +16,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F5128A75-1A1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F0732F96-D774-44A7-B51A-54AC1A278F99}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample", "sample", "{174608AE-6E0A-4774-9DB9-46BC5E3B3C78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NHibernate.Caches.Redis.Sample", "sample\NHibernate.Caches.Redis.Sample\NHibernate.Caches.Redis.Sample.csproj", "{3BA51CF9-7DCC-4265-A043-F83284D1942A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +34,10 @@ Global
 		{A067C7D2-CF09-4F24-9848-5CE10DC48438}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A067C7D2-CF09-4F24-9848-5CE10DC48438}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A067C7D2-CF09-4F24-9848-5CE10DC48438}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BA51CF9-7DCC-4265-A043-F83284D1942A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BA51CF9-7DCC-4265-A043-F83284D1942A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BA51CF9-7DCC-4265-A043-F83284D1942A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BA51CF9-7DCC-4265-A043-F83284D1942A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -37,5 +45,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{1B50164C-DB00-4109-A0D4-E2868ABFEDAF} = {F5128A75-1A1D-4585-BB4E-A9E55D12D03C}
 		{A067C7D2-CF09-4F24-9848-5CE10DC48438} = {F0732F96-D774-44A7-B51A-54AC1A278F99}
+		{3BA51CF9-7DCC-4265-A043-F83284D1942A} = {174608AE-6E0A-4774-9DB9-46BC5E3B3C78}
 	EndGlobalSection
 EndGlobal

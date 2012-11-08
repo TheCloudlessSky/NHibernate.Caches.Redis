@@ -104,3 +104,5 @@ UpgradeLog*.XML
 
 # Redis
 *.rdb
+
+App_Data # Sample database.
