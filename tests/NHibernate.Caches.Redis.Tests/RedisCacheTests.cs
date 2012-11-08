@@ -48,12 +48,29 @@ namespace NHibernate.Caches.Redis.Tests
             var data = RedisNative.Get(cacheKey);
             var expiry = Redis.GetTimeToLive(cacheKey);
 
-            Assert.True(expiry <= TimeSpan.FromMinutes(5));
+            Assert.True(expiry >= TimeSpan.FromMinutes(4) && expiry <= TimeSpan.FromMinutes(5));
 
             var person = serializer.Deserialize(data) as Person;
             Assert.NotNull(person);
             Assert.Equal("Foo", person.Name);
             Assert.Equal(10, person.Age);
+        }
+
+        [Fact]
+        public void Configure_region_expiration_from_config_element()
+        {
+            // Arrange
+            var configElement = new RedisCacheElement("region", TimeSpan.FromMinutes(99));
+            var props = new Dictionary<string, string>();
+            var cache = new RedisCache("region", props, configElement, this.ClientManager);
+
+            // Act
+            cache.Put(999, new Person("Foo", 10));
+
+            // Assert
+            var cacheKey = cache.CacheNamespace.GlobalCacheKey(999);
+            var expiry = Redis.GetTimeToLive(cacheKey);
+            Assert.True(expiry >= TimeSpan.FromMinutes(98) && expiry <= TimeSpan.FromMinutes(99));
         }
 
         [Fact]

@@ -1,0 +1,54 @@
+﻿@model IEnumerable<NHibernate.Caches.Redis.Sample.Models.BlogPost>
+@{
+    ViewBag.Title = "Index";
+    var stats = NHibernate.Caches.Redis.Sample.MvcApplication.SessionFactory.Statistics;
+}
+
+<style type="text/css">
+
+.stats td:first-child {
+  font-weight: bold;
+  padding-right: 20px;
+}
+
+</style>
+
+<h2>Index</h2>
+
+@using (Html.BeginForm("create", "home"))
+{
+    <input type="text" name="title" placeholder="Title" /><br />
+    <textarea name="body" placeholder="Body"></textarea><br />
+    <button type="submit">Create Post</button>
+}
+
+<br /><br /><hr /><br /><br />
+
+<h2>Stats</h2>
+<table class="stats">
+    <tr><td>Region Names</td><td>@String.Join(", ", stats.SecondLevelCacheRegionNames)</td></tr>
+    <tr><td>Query Cache Hit</td><td>@stats.QueryCacheHitCount</td></tr>
+    <tr><td>Query Cache Miss</td><td>@stats.QueryCacheMissCount</td></tr>
+    <tr><td>Query Cache Put</td><td>@stats.QueryCachePutCount</td></tr>
+    <tr><td>2nd Lvl Cache Hit</td><td>@stats.SecondLevelCacheHitCount</td></tr>
+    <tr><td>2nd Lvl Cache Miss</td><td>@stats.SecondLevelCacheMissCount</td></tr>
+    <tr><td>2nd Lvl Cache Put</td><td>@stats.SecondLevelCachePutCount</td></tr>
+</table>
+
+<h2>Posts</h2>
+
+<table style="width: 500px;">
+    <thead><tr><th>Title</th><th>Body</th><th>Created</th></tr></thead>
+
+    <tbody>
+        @foreach (var post in Model)
+        {
+            <tr>
+                <td>@post.Title</td>
+                <td>@post.Body</td>
+                <td>@post.Created.ToString()</td>
+            </tr>
+        }
+    </tbody>
+
+</table>

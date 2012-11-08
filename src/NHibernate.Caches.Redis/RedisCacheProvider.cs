@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using NHibernate.Cache;
 using ServiceStack.Redis;
+using System.Configuration;
 
 namespace NHibernate.Caches.Redis
 {
@@ -11,10 +12,18 @@ namespace NHibernate.Caches.Redis
     {
         private static readonly IInternalLogger log;
         private static IRedisClientsManager clientManagerStatic;
+        private static RedisCacheProviderSection config;
 
         static RedisCacheProvider()
         {
             log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
+
+            config = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection;
+
+            if (config == null)
+            {
+                config = new RedisCacheProviderSection();
+            }
         }
 
         public static void SetClientManager(IRedisClientsManager clientManager)
@@ -56,7 +65,13 @@ namespace NHibernate.Caches.Redis
                 log.Debug("building cache with region: " + regionName + ", properties: " + sb);
             }
 
-            return new RedisCache(regionName, properties, clientManagerStatic);
+            RedisCacheElement configElement = null;
+            if (!String.IsNullOrWhiteSpace(regionName))
+            {
+                configElement = config.Caches[regionName];
+            }
+
+            return new RedisCache(regionName, properties, configElement, clientManagerStatic);
         }
 
         public long NextTimestamp()
