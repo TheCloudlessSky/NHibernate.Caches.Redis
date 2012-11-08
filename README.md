@@ -39,4 +39,24 @@ using (var sessionFactory = ...)
 clientManager.Dispose();
 ```
 
+Configuration
+-------------
+
+Inside of the `app/web.config`, a custom configuration section can be added to
+configure each cache region:
+
+```xml
+<configSections>
+  <section name="nhibernateRedisCache" type="NHibernate.Caches.Redis.RedisCacheProviderSection, NHibernate.Caches.Redis" />
+</configSections>
+
+<nhibernateRedisCache>
+  <caches>
+    <cache region="BlogPost" expiration="900" />
+  </caches>
+</nhibernateRedisCache>
+```
+
+---
+
 Happy caching!
