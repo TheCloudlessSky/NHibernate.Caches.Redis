@@ -8,16 +8,19 @@ using FluentNHibernate.Cfg.Db;
 using Xunit;
 using NHibernate.Tool.hbm2ddl;
 using System.IO;
+using ServiceStack.Redis;
 
 namespace NHibernate.Caches.Redis.Tests
 {
     public class RedisCacheIntegrationTests : RedisTest
     {
         private static Configuration configuration;
+        private StoppableRedisClientManager fakeClientManager;
 
         public RedisCacheIntegrationTests()
         {
-            RedisCacheProvider.InternalSetClientManager(this.ClientManager);
+            fakeClientManager = new StoppableRedisClientManager(this.ClientManager);
+            RedisCacheProvider.InternalSetClientManager(fakeClientManager);
 
             if (File.Exists("tests.db")) { File.Delete("tests.db"); }
 
@@ -112,6 +115,39 @@ namespace NHibernate.Caches.Redis.Tests
                     Assert.Equal(1, sf.Statistics.QueryCacheHitCount);
                     Assert.Equal(0, sf.Statistics.SecondLevelCachePutCount);
                     Assert.Equal(0, sf.Statistics.QueryCachePutCount);
+                });
+            }
+        }
+
+        [Fact]
+        public void Cache_should_be_auto_recoverable_if_Redis_communication_fails()
+        {
+            using (var sf = CreateSessionFactory())
+            {
+                object personId = null;
+
+                UsingSession(sf, session => personId = session.Save(new Person("Foo", 1)));
+
+                sf.Statistics.Clear();
+
+                fakeClientManager.Available = false;
+
+                UsingSession(sf, session =>
+                {
+                    session.Get<Person>(personId);
+                    Assert.Equal(1, sf.Statistics.SecondLevelCacheMissCount);
+                    Assert.Equal(1, sf.Statistics.SecondLevelCachePutCount);
+                });
+
+                sf.Statistics.Clear();
+                fakeClientManager.Available = true;
+
+                UsingSession(sf, session =>
+                {
+                    session.Get<Person>(personId);
+                    Assert.Equal(0, sf.Statistics.SecondLevelCacheHitCount);
+                    Assert.Equal(1, sf.Statistics.SecondLevelCacheMissCount);
+                    Assert.Equal(1, sf.Statistics.SecondLevelCachePutCount);
                 });
             }
         }

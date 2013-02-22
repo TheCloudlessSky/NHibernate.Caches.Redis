@@ -7,6 +7,7 @@ using ServiceStack.Common;
 using ServiceStack.Redis;
 using ServiceStack.Redis.Support;
 using ServiceStack.Text;
+using System.Net.Sockets;
 
 namespace NHibernate.Caches.Redis
 {
@@ -69,11 +70,20 @@ namespace NHibernate.Caches.Redis
             return Timestamper.Next();
         }
 
-        private void SyncGeneration()
+        protected void SyncGeneration()
         {
-            if (CacheNamespace.GetGeneration() == -1)
+            try
             {
-                CacheNamespace.SetGeneration(FetchGeneration());
+                if (CacheNamespace.GetGeneration() == -1)
+                {
+                    CacheNamespace.SetGeneration(FetchGeneration());
+                }
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not sync generation");
+
+                if (UnrecoverableException(e)) { throw; }
             }
         }
 
@@ -125,10 +135,11 @@ namespace NHibernate.Caches.Redis
                     });
                 });
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                log.WarnFormat("could not put in cache : {0}", key);
-                throw;
+                log.ErrorFormat("could not put in cache : {0}", key);
+
+                if (UnrecoverableException(e)) { throw; }
             }
         }
 
@@ -154,10 +165,18 @@ namespace NHibernate.Caches.Redis
                 return serializer.Deserialize(data);
 
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                log.WarnFormat("coult not get from cache : {0}", key);
-                throw;
+                log.ErrorFormat("coult not get from cache : {0}", key);
+
+                if (UnrecoverableException(e))
+                {
+                    throw;
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 
@@ -178,10 +197,11 @@ namespace NHibernate.Caches.Redis
                     });
                 });
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                log.WarnFormat("could not remove from cache : {0}", key);
-                throw;
+                log.ErrorFormat("could not remove from cache : {0}", key);
+
+                if (UnrecoverableException(e)) { throw; }
             }
         }
 
@@ -210,10 +230,11 @@ namespace NHibernate.Caches.Redis
                     transaction.Commit();
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                log.WarnFormat("could not clear cache : {0}", generationKey);
-                throw;
+                log.ErrorFormat("could not clear cache : {0}", generationKey);
+
+                if (UnrecoverableException(e)) { throw; }
             }
         }
 
@@ -247,10 +268,11 @@ namespace NHibernate.Caches.Redis
                     }, lockTimeout);
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                log.WarnFormat("could not acquire cache lock : ", key);
-                throw;
+                log.ErrorFormat("could not acquire cache lock : ", key);
+
+                if (UnrecoverableException(e)) { throw; }
             }
         }
 
@@ -268,10 +290,11 @@ namespace NHibernate.Caches.Redis
                     client.Remove(globalKey);
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                log.WarnFormat("could not release cache lock : {0}", key);
-                throw;
+                log.ErrorFormat("could not release cache lock : {0}", key);
+
+                if (UnrecoverableException(e)) { throw; }
             }
         }
 
@@ -299,6 +322,12 @@ namespace NHibernate.Caches.Redis
                     transaction.Replay();
                 }
             }
+        }
+
+        private bool UnrecoverableException(Exception exception)
+        {
+            var recoverable = exception is SocketException || exception.InnerException is SocketException;
+            return !recoverable;
         }
     }
 }

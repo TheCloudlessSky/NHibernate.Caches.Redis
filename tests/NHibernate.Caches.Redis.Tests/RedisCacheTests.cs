@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ServiceStack.Redis.Support;
 using Xunit;
+using ServiceStack.Redis;
 
 namespace NHibernate.Caches.Redis.Tests
 {
@@ -345,6 +346,59 @@ namespace NHibernate.Caches.Redis.Tests
                 var lockIndex = listResults.IndexOf(i + " lock");
                 Assert.Equal(i + " lock", listResults[lockIndex]);
                 Assert.Equal(i + " unlock", listResults[lockIndex + 1]);
+            }
+        }
+
+        [Fact]
+        public void Put_and_Get_should_silently_continue_if_SocketException()
+        {
+            using (var invalidClientManager = new BasicRedisClientManager(InvalidHost))
+            {
+                // Arrange
+                const int key = 1;
+                var cache = new RedisCache("region_A", invalidClientManager);
+
+                // Act
+                cache.Put(key, new Person("A", 1));
+
+                // Assert
+                Assert.Null(cache.Get(key));
+            }
+        }
+
+        [Fact]
+        public void Lock_and_Unlock_should_silently_continue_if_SocketException()
+        {
+            using (var invalidClientManager = new BasicRedisClientManager(InvalidHost))
+            {
+                // Arrange
+                const int key = 1;
+                var cache = new RedisCache("region_A", invalidClientManager);
+
+                // Act / Assert
+                Assert.DoesNotThrow(() =>
+                {
+                    cache.Put(key, new Person("A", 1));
+                    cache.Lock(key);
+                    cache.Unlock(key);
+                });
+            }
+        }
+
+        [Fact]
+        public void Remove_should_silently_continue_if_SocketException()
+        {
+            using (var invalidClientManager = new BasicRedisClientManager(InvalidHost))
+            {
+                // Arrange
+                const int key = 1;
+                var cache = new RedisCache("region_A", invalidClientManager);
+
+                // Act
+                Assert.DoesNotThrow(() =>
+                {
+                    cache.Remove(key);
+                });
             }
         }
     }
