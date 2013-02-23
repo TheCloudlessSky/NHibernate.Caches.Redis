@@ -60,6 +60,10 @@ configure each cache region:
 Changelog
 ---------
 
+**1.2.0**
+- Allow the provider to gracefully continue when Redis is unavailable.
+- Fix infinite loop when data in Redis was cleared.
+
 **1.1.0**
 - Added configuration section for customizing the cache regions.
 - Added sample project.
