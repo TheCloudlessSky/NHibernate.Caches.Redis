@@ -303,23 +303,31 @@ namespace NHibernate.Caches.Redis
             long serverGeneration = -1;
 
             using (var client = this.clientManager.GetClient())
-            using (var transaction = client.CreateTransaction())
             {
-                action(transaction);
-
-                transaction.QueueCommand(r =>
-                    r.GetValue(CacheNamespace.GetGenerationKey()),
-                    x => serverGeneration = Convert.ToInt64(x));
-
-                transaction.Commit();
-
-                // Another client/cache has changed the generation. Therefore, 
-                // this cache is out of date so we need to sync the generation 
-                // with the server.
-                while (serverGeneration != CacheNamespace.GetGeneration())
+                using (var transaction = client.CreateTransaction())
                 {
-                    CacheNamespace.SetGeneration(serverGeneration);
-                    transaction.Replay();
+                    action(transaction);
+
+                    transaction.QueueCommand(r =>
+                        r.GetValue(CacheNamespace.GetGenerationKey()),
+                        x => serverGeneration = Convert.ToInt64(x));
+
+                    transaction.Commit();
+
+                    // Another client/cache has changed the generation. Therefore, 
+                    // this cache is out of date so we need to sync the generation 
+                    // with the server.
+                    while (serverGeneration > CacheNamespace.GetGeneration())
+                    {
+                        CacheNamespace.SetGeneration(serverGeneration);
+                        transaction.Replay();
+                    }
+                }
+
+                // The generation on the server may have been removed.
+                if (serverGeneration < CacheNamespace.GetGeneration())
+                {
+                    client.SetEntry(CacheNamespace.GetGenerationKey(), CacheNamespace.GetGeneration().ToString());
                 }
             }
         }

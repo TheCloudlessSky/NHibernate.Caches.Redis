@@ -401,5 +401,22 @@ namespace NHibernate.Caches.Redis.Tests
                 });
             }
         }
+
+        [Fact]
+        public void Should_update_server_generation_when_server_has_less_generation_than_the_client()
+        {
+            // Arrange
+            const int key = 1;
+            var cache = new RedisCache("region", this.ClientManager);
+
+            // Act
+            cache.Put(key, new Person("A", 1));
+            Redis.FlushDb();
+            cache.Put(key, new Person("B", 2));
+
+            // Assert
+            var generationKey = cache.CacheNamespace.GetGenerationKey();
+            Assert.Equal(cache.CacheNamespace.GetGeneration().ToString(), Redis.GetValue(generationKey));
+        }
     }
 }
