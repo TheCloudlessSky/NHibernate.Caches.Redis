@@ -144,7 +144,10 @@ namespace NHibernate.Caches.Redis.Tests
 
                 UsingSession(sf, session =>
                 {
-                    session.Get<Person>(personId);
+                    var result = session.Get<Person>(personId);
+                    Assert.NotNull(result);
+                    Assert.Equal("Foo", result.Name);
+                    Assert.Equal(1, result.Age);
                     Assert.Equal(0, sf.Statistics.SecondLevelCacheHitCount);
                     Assert.Equal(1, sf.Statistics.SecondLevelCacheMissCount);
                     Assert.Equal(1, sf.Statistics.SecondLevelCachePutCount);
