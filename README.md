@@ -60,6 +60,9 @@ configure each cache region:
 Changelog
 ---------
 
+**1.2.1**
+- Update ServiceStack.Redis to 3.9.55.
+
 **1.2.0**
 - Allow the provider to gracefully continue when Redis is unavailable.
 - Fix infinite loop when data in Redis was cleared.
