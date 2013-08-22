@@ -105,7 +105,7 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public void Put(object key, object value)
+        public virtual void Put(object key, object value)
         {
             key.ThrowIfNull("key");
             value.ThrowIfNull("value");
@@ -142,7 +142,7 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public object Get(object key)
+        public virtual object Get(object key)
         {
             key.ThrowIfNull();
 
@@ -176,7 +176,7 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public void Remove(object key)
+        public virtual void Remove(object key)
         {
             key.ThrowIfNull();
 
@@ -203,7 +203,7 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public void Clear()
+        public virtual void Clear()
         {
             var generationKey = CacheNamespace.GetGenerationKey();
             var globalKeysKey = CacheNamespace.GetGlobalKeysKey();
@@ -238,13 +238,13 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public void Destroy()
+        public virtual void Destroy()
         {
             // No-op since Redis is distributed.
             log.DebugFormat("destroying cache : {0}", this.CacheNamespace.GetGenerationKey());
         }
 
-        public void Lock(object key)
+        public virtual void Lock(object key)
         {
             log.DebugFormat("acquiring cache lock : {0}", key);
 
@@ -278,7 +278,7 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public void Unlock(object key)
+        public virtual void Unlock(object key)
         {
             string globalKey;
             if (!acquiredLocks.TryGetValue(key, out globalKey)) { return; }
