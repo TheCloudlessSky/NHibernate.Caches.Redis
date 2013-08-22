@@ -69,7 +69,12 @@ namespace NHibernate.Caches.Redis
                 configElement = config.Caches[regionName];
             }
 
-            return new RedisCache(regionName, properties, configElement, clientManagerStatic);
+            return BuildCache(regionName, properties, configElement, clientManagerStatic);
+        }
+
+        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, IRedisClientsManager clientManager)
+        {
+            return new RedisCache(regionName, properties, configElement, clientManager);
         }
 
         public long NextTimestamp()
