@@ -10,14 +10,12 @@ namespace NHibernate.Caches.Redis
 {
     public class RedisCacheProvider : ICacheProvider
     {
-        private static readonly IInternalLogger log;
+        private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
         private static IRedisClientsManager clientManagerStatic;
         private static RedisCacheProviderSection config;
 
         static RedisCacheProvider()
         {
-            log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
-
             config = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection;
 
             if (config == null)

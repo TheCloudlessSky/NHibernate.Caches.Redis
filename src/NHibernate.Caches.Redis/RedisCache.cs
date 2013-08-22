@@ -15,7 +15,7 @@ namespace NHibernate.Caches.Redis
     {
         private const string CacheNamePrefix = "NHibernate-Cache:";
 
-        private static readonly IInternalLogger log;
+        private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCache));
 
         private readonly Dictionary<object, string> acquiredLocks = new Dictionary<object, string>();
         private readonly ISerializer serializer;
@@ -28,11 +28,6 @@ namespace NHibernate.Caches.Redis
         public string RegionName { get; private set; }
         public RedisNamespace CacheNamespace { get; private set; }
         public int Timeout { get { return Timestamper.OneMs * 60000; } }
-
-        static RedisCache()
-        {
-            log = LoggerProvider.LoggerFor(typeof(RedisCache));
-        }
 
         public RedisCache(string regionName, IRedisClientsManager clientManager)
             : this(regionName, new Dictionary<string, string>(), null, clientManager)
