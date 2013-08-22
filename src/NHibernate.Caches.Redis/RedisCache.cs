@@ -78,7 +78,9 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not sync generation");
 
-                if (UnrecoverableException(e)) { throw; }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
             }
         }
 
@@ -134,7 +136,9 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not put in cache : {0}", key);
 
-                if (UnrecoverableException(e)) { throw; }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
             }
         }
 
@@ -164,14 +168,11 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("coult not get from cache : {0}", key);
 
-                if (UnrecoverableException(e))
-                {
-                    throw;
-                }
-                else
-                {
-                    return null;
-                }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
+
+                return null;
             }
         }
 
@@ -196,7 +197,9 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not remove from cache : {0}", key);
 
-                if (UnrecoverableException(e)) { throw; }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
             }
         }
 
@@ -229,7 +232,9 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not clear cache : {0}", generationKey);
 
-                if (UnrecoverableException(e)) { throw; }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
             }
         }
 
@@ -267,7 +272,9 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not acquire cache lock : ", key);
 
-                if (UnrecoverableException(e)) { throw; }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
             }
         }
 
@@ -289,7 +296,9 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not release cache lock : {0}", key);
 
-                if (UnrecoverableException(e)) { throw; }
+                var evtArg = new RedisCacheExceptionEventArgs(e);
+                OnException(evtArg);
+                if (evtArg.Throw) { throw; }
             }
         }
 
@@ -327,10 +336,14 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        private bool UnrecoverableException(Exception exception)
+        protected virtual void OnException(RedisCacheExceptionEventArgs e)
         {
-            var recoverable = exception is SocketException || exception.InnerException is SocketException;
-            return !recoverable;
+            var isSocketException = e.Exception is SocketException || e.Exception.InnerException is SocketException;
+
+            if (!isSocketException)
+            {
+                e.Throw = true;
+            }
         }
     }
 }
