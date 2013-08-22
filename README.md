@@ -57,8 +57,99 @@ configure each cache region:
 </nhibernateRedisCache>
 ```
 
+Exception Handling
+------------------
+
+You may require that we gracefully continue to the database as if we "missed"
+the cache if an exception occurs. By default, this is what happens.  
+
+However, there is also the need of advanced exception handling scenarios. For 
+example, imagine if you are using NHibernate in a web project and your Redis
+server is unavailable. You may not want NHibernate to continue to timeout for
+*every* NHibernate operation. Therefore, you do something similar to this:
+
+```csharp
+public class RequestRecoveryRedisCache : RedisCache
+{
+    private const string SkipNHibernateCacheKey = "__SkipNHibernateCache__";
+
+    public RequestRecoveryRedisCache(string regionName, IDictionary<string, string> properties, RedisCacheElement element, IRedisClientsManager clientManager)
+        : base(regionName, properties, element, clientManager)
+    {
+
+    }
+
+    public override object Get(object key)
+    {
+        if (HasFailedForThisHttpRequest()) return null;
+        return base.Get(key);
+    }
+
+    public override void Put(object key, object value)
+    {
+        if (HasFailedForThisHttpRequest()) return;
+        base.Put(key, value);
+    }
+
+    public override void Remove(object key)
+    {
+        if (HasFailedForThisHttpRequest()) return;
+        base.Remove(key);
+    }
+
+    public override void Clear()
+    {
+        if (HasFailedForThisHttpRequest()) return;
+        base.Clear();
+    }
+
+    public override void Destroy()
+    {
+        if (HasFailedForThisHttpRequest()) return;
+        base.Destroy();
+    }
+
+    public override void Lock(object key)
+    {
+        if (HasFailedForThisHttpRequest()) return;
+        base.Lock(key);
+    }
+
+    public override void Unlock(object key)
+    {
+        if (HasFailedForThisHttpRequest()) return;
+        base.Unlock(key);
+    }
+
+    protected override void OnException(RedisCacheExceptionEventArgs e)
+    {
+        HttpContext.Current.Items[SkipNHibernateCacheKey] = true;
+    }
+
+    private bool HasFailedForThisHttpRequest()
+    {
+        return HttpContext.Current.Items.Contains(SkipNHibernateCacheKey);
+    }
+}
+
+public class RequestRecoveryRedisCacheProvider : RedisCacheProvider
+{
+    protected override RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, IRedisClientsManager clientManager)
+    {
+        return new RequestRecoveryRedisCache(regionName, properties, configElement, clientManager);
+    }
+}
+
+```
+
+And then use `RequestRecoveryRedisCacheProvider` in your `app/web.config` settings.
+
 Changelog
 ---------
+
+**1.3.0**
+- Add the `OnException` method for sub-classing the cache client and handling 
+  exceptions.
 
 **1.2.1**
 - Update ServiceStack.Redis to 3.9.55.
