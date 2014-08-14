@@ -1,31 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ServiceStack.Redis;
+using StackExchange.Redis;
 
 namespace NHibernate.Caches.Redis.Tests
 {
     public class RedisTest : IDisposable
     {
-        protected const string ValidHost = "localhost:6379";
-        protected const string InvalidHost = "unknown-host:6666";
+        protected const string ValidHost = "localhost:6379,allowAdmin=true,abortConnect=false";
+        protected const string InvalidHost = "unknown-host:6666,abortConnect=false";
 
-        protected IRedisClientsManager ClientManager { get; private set; }
-        protected IRedisClient Redis { get; private set; }
-        protected IRedisNativeClient RedisNative { get { return (IRedisNativeClient)Redis; } }
+        protected ConnectionMultiplexer ClientManager { get; private set; }
+        protected IDatabase Redis { get; private set; }
         
         protected RedisTest()
         {
-            this.ClientManager = new BasicRedisClientManager(ValidHost);
-            this.Redis = this.ClientManager.GetClient();
-            this.Redis.FlushDb();
+            ClientManager = ConnectionMultiplexer.Connect(ValidHost);
+            Redis = ClientManager.GetDatabase();
+            FlushDb();
+        }
+
+        protected void FlushDb()
+        {
+            ClientManager.GetServer("localhost", 6379).FlushAllDatabases();
         }
 
         public void Dispose()
         {
-            this.Redis.Dispose();
-            this.ClientManager.Dispose();
+            ClientManager.Dispose();
         }
     }
 }

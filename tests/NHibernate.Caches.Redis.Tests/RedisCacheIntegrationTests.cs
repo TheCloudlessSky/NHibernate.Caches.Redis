@@ -1,26 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using NHibernate.Cfg;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using Xunit;
 using NHibernate.Tool.hbm2ddl;
 using System.IO;
-using ServiceStack.Redis;
 
 namespace NHibernate.Caches.Redis.Tests
 {
     public class RedisCacheIntegrationTests : RedisTest
     {
         private static Configuration configuration;
-        private StoppableRedisClientManager fakeClientManager;
 
         public RedisCacheIntegrationTests()
         {
-            fakeClientManager = new StoppableRedisClientManager(this.ClientManager);
-            RedisCacheProvider.InternalSetClientManager(fakeClientManager);
+            RedisCacheProvider.InternalSetClientManager(ClientManager);
 
             if (File.Exists("tests.db")) { File.Delete("tests.db"); }
 
@@ -30,18 +24,9 @@ namespace NHibernate.Caches.Redis.Tests
                     .Database(
                         SQLiteConfiguration.Standard.UsingFile("tests.db")
                     )
-                    .Mappings(m =>
-                    {
-                        m.FluentMappings.Add(typeof(PersonMapping));
-                    })
-                    .ExposeConfiguration(cfg =>
-                    {
-                        cfg.SetProperty(NHibernate.Cfg.Environment.GenerateStatistics, "true");
-                    })
-                    .Cache(c =>
-                    {
-                        c.UseQueryCache().UseSecondLevelCache().ProviderClass<RedisCacheProvider>();
-                    })
+                    .Mappings(m => m.FluentMappings.Add(typeof(PersonMapping)))
+                    .ExposeConfiguration(cfg => cfg.SetProperty(NHibernate.Cfg.Environment.GenerateStatistics, "true"))
+                    .Cache(c => c.UseQueryCache().UseSecondLevelCache().ProviderClass<RedisCacheProvider>())
                     .BuildConfiguration();
             }
 
@@ -115,42 +100,6 @@ namespace NHibernate.Caches.Redis.Tests
                     Assert.Equal(1, sf.Statistics.QueryCacheHitCount);
                     Assert.Equal(0, sf.Statistics.SecondLevelCachePutCount);
                     Assert.Equal(0, sf.Statistics.QueryCachePutCount);
-                });
-            }
-        }
-
-        [Fact]
-        public void Cache_should_be_auto_recoverable_if_Redis_communication_fails()
-        {
-            using (var sf = CreateSessionFactory())
-            {
-                object personId = null;
-
-                UsingSession(sf, session => personId = session.Save(new Person("Foo", 1)));
-
-                sf.Statistics.Clear();
-
-                fakeClientManager.Available = false;
-
-                UsingSession(sf, session =>
-                {
-                    session.Get<Person>(personId);
-                    Assert.Equal(1, sf.Statistics.SecondLevelCacheMissCount);
-                    Assert.Equal(1, sf.Statistics.SecondLevelCachePutCount);
-                });
-
-                sf.Statistics.Clear();
-                fakeClientManager.Available = true;
-
-                UsingSession(sf, session =>
-                {
-                    var result = session.Get<Person>(personId);
-                    Assert.NotNull(result);
-                    Assert.Equal("Foo", result.Name);
-                    Assert.Equal(1, result.Age);
-                    Assert.Equal(0, sf.Statistics.SecondLevelCacheHitCount);
-                    Assert.Equal(1, sf.Statistics.SecondLevelCacheMissCount);
-                    Assert.Equal(1, sf.Statistics.SecondLevelCachePutCount);
                 });
             }
         }

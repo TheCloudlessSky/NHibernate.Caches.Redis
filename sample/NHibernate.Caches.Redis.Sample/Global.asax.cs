@@ -1,20 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
 using System.IO;
-using NHibernate.Cfg;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using NHibernate.Tool.hbm2ddl;
 using NHibernate.Caches.Redis.Sample.Mapping;
-using ServiceStack.Redis;
+using StackExchange.Redis;
 
 namespace NHibernate.Caches.Redis.Sample
 {
-    public class MvcApplication : System.Web.HttpApplication
+    public class MvcApplication : HttpApplication
     {
         public static void RegisterGlobalFilters(GlobalFilterCollection filters)
         {
@@ -42,12 +38,9 @@ namespace NHibernate.Caches.Redis.Sample
             RegisterGlobalFilters(GlobalFilters.Filters);
             RegisterRoutes(RouteTable.Routes);
 
-            var clientManager = new BasicRedisClientManager("localhost:6379");
+            var clientManager = ConnectionMultiplexer.Connect("localhost:6379");
             
-            using (var client = clientManager.GetClient())
-            {
-                client.FlushDb();
-            }
+            clientManager.GetServer("localhost", 6379).FlushAllDatabases();
 
             RedisCacheProvider.SetClientManager(clientManager);
 
@@ -59,18 +52,9 @@ namespace NHibernate.Caches.Redis.Sample
                 .Database(
                     SQLiteConfiguration.Standard.UsingFile(dbFile)
                 )
-                .Mappings(m =>
-                {
-                    m.FluentMappings.Add(typeof(BlogPostMapping));
-                })
-                .ExposeConfiguration(cfg =>
-                {
-                    cfg.SetProperty(NHibernate.Cfg.Environment.GenerateStatistics, "true");
-                })
-                .Cache(c =>
-                {
-                    c.UseQueryCache().UseSecondLevelCache().ProviderClass<RedisCacheProvider>();
-                })
+                .Mappings(m => m.FluentMappings.Add(typeof(BlogPostMapping)))
+                .ExposeConfiguration(cfg => cfg.SetProperty(Cfg.Environment.GenerateStatistics, "true"))
+                .Cache(c => c.UseQueryCache().UseSecondLevelCache().ProviderClass<RedisCacheProvider>())
                 .BuildConfiguration();
 
             new SchemaExport(configuration).Create(false, true);
