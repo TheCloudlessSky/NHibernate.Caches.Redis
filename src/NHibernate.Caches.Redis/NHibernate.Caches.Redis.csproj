@@ -77,14 +77,23 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="DateTimeExtensions.cs" />
+    <Compile Include="ExecExtensions.cs" />
+    <Compile Include="ILockingStrategy.cs" />
+    <Compile Include="ISerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
+    <Compile Include="ObjectSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReaderWriterLockingStrategy.cs" />
+    <Compile Include="ReadLock.cs" />
     <Compile Include="RedisCache.cs" />
     <Compile Include="RedisCacheElement.cs" />
     <Compile Include="RedisCacheExceptionArgs.cs" />
     <Compile Include="RedisCacheProvider.cs" />
     <Compile Include="RedisCacheProviderSection.cs" />
     <Compile Include="RedisCacheElementCollection.cs" />
+    <Compile Include="RedisNamespace.cs" />
+    <Compile Include="WriteLock.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
