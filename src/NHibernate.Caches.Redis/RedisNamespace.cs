@@ -1,6 +1,6 @@
 namespace NHibernate.Caches.Redis
 {
-    public class RedisNamespace
+    internal class RedisNamespace
     {
 
         private const string UniqueCharacter = "?";

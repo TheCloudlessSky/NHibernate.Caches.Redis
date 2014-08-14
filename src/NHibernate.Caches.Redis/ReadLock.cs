@@ -7,7 +7,7 @@ namespace NHibernate.Caches.Redis
     /// This class manages a read lock for a local readers/writer lock, 
     /// using the Resource Acquisition Is Initialization pattern
     /// </summary>
-    public class ReadLock : IDisposable
+    internal class ReadLock : IDisposable
     {
         private readonly ReaderWriterLockSlim _lockObject;
 

@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace NHibernate.Caches.Redis
 {
-    public class WriteLock : IDisposable
+    internal class WriteLock : IDisposable
     {
         private readonly ReaderWriterLockSlim _lockObject;
 

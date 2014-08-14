@@ -18,13 +18,13 @@ namespace NHibernate.Caches.Redis
         private readonly Dictionary<object, string> acquiredLocks = new Dictionary<object, string>();
         private readonly ConnectionMultiplexer connectionMultiplexer;
         private readonly RedisCacheProviderOptions options;
-        private readonly int expirySeconds;
+        private readonly TimeSpan expiry;
         private readonly TimeSpan lockTimeout = TimeSpan.FromSeconds(30);
 
         private const int DefaultExpiry = 300 /*5 minutes*/;
 
         public string RegionName { get; private set; }
-        public RedisNamespace CacheNamespace { get; private set; }
+        internal RedisNamespace CacheNamespace { get; private set; }
         public int Timeout { get { return Timestamper.OneMs * 60000; } }
 
         public RedisCache(string regionName, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
@@ -40,11 +40,11 @@ namespace NHibernate.Caches.Redis
 
             RegionName = regionName.ThrowIfNull("regionName");
 
-            expirySeconds = element != null
-                ? (int)element.Expiration.TotalSeconds
-                : PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, DefaultExpiry);
+            expiry = element != null
+                ? element.Expiration
+                : TimeSpan.FromSeconds(PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, DefaultExpiry));
 
-            log.DebugFormat("using expiration : {0} seconds", expirySeconds);
+            log.DebugFormat("using expiration : {0} seconds", expiry.TotalSeconds);
 
             var regionPrefix = PropertiesHelper.GetString(Cfg.Environment.CacheRegionPrefix, properties, null);
             log.DebugFormat("using region prefix : {0}", regionPrefix);
@@ -70,7 +70,8 @@ namespace NHibernate.Caches.Redis
             {
                 if (CacheNamespace.GetGeneration() == -1)
                 {
-                    CacheNamespace.SetGeneration(FetchGeneration());
+                    var latestGeneration = FetchGeneration();
+                    CacheNamespace.SetGeneration(latestGeneration);
                 }
             }
             catch (Exception e)
@@ -85,14 +86,14 @@ namespace NHibernate.Caches.Redis
 
         private long FetchGeneration()
         {
-            var client = connectionMultiplexer.GetDatabase();
+            var db = connectionMultiplexer.GetDatabase();
 
             var generationKey = CacheNamespace.GetGenerationKey();
-            var attemptedGeneration = client.StringGet(generationKey);
+            var attemptedGeneration = db.StringGet(generationKey);
 
             if (!attemptedGeneration.HasValue)
             {
-                var generation = client.StringIncrement(generationKey);
+                var generation = db.StringIncrement(generationKey);
                 log.DebugFormat("creating new generation : {0}", generation);
                 return generation;
             }
@@ -116,7 +117,7 @@ namespace NHibernate.Caches.Redis
                 {
                     var cacheKey = CacheNamespace.GlobalCacheKey(key);
 
-                    transaction.StringSetAsync(cacheKey, data, TimeSpan.FromSeconds(expirySeconds));
+                    transaction.StringSetAsync(cacheKey, data, expiry);
                     var globalKeysKey = CacheNamespace.GetGlobalKeysKey();
 
                     transaction.SetAddAsync(globalKeysKey, cacheKey);
@@ -148,10 +149,7 @@ namespace NHibernate.Caches.Redis
                     dataResult = transaction.StringGetAsync(cacheKey);
                 });
 
-                byte[] data = null;
-
-                if (dataResult != null)
-                    data = dataResult.Result;
+                var data = dataResult.Result;
 
                 return Deserialize(data);
 
@@ -180,7 +178,7 @@ namespace NHibernate.Caches.Redis
                 {
                     var cacheKey = CacheNamespace.GlobalCacheKey(key);
 
-                    transaction.KeyDeleteAsync(cacheKey);
+                    transaction.KeyDeleteAsync(cacheKey, CommandFlags.FireAndForget);
                 });
             }
             catch (Exception e)
@@ -202,16 +200,16 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var client = connectionMultiplexer.GetDatabase();
-                var transaction = client.CreateTransaction();
+                var db = connectionMultiplexer.GetDatabase();
+                var transaction = db.CreateTransaction();
 
-                var generationIncrementResult = transaction.StringIncrementAsync(generationKey);
+                var generationIncrement = transaction.StringIncrementAsync(generationKey);
 
-                transaction.KeyDeleteAsync(globalKeysKey);
+                transaction.KeyDeleteAsync(globalKeysKey, CommandFlags.FireAndForget);
 
                 transaction.Execute();
 
-                CacheNamespace.SetGeneration(generationIncrementResult.Result);
+                CacheNamespace.SetGeneration(generationIncrement.Result);
             }
             catch (Exception e)
             {
@@ -237,11 +235,11 @@ namespace NHibernate.Caches.Redis
             {
                 var globalKey = CacheNamespace.GlobalKey(key, RedisNamespace.NumTagsForLockKey);
 
-                var client = connectionMultiplexer.GetDatabase();
+                var db = connectionMultiplexer.GetDatabase();
 
                 ExecExtensions.RetryUntilTrue(() =>
                 {
-                    var wasSet = client.StringSet(globalKey, "lock " + DateTime.UtcNow.ToUnixTime(), when: When.NotExists);
+                    var wasSet = db.StringSet(globalKey, "lock " + DateTime.UtcNow.ToUnixTime(), when: When.NotExists);
 
                     if (wasSet)
                         acquiredLocks[key] = globalKey;
@@ -268,9 +266,9 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var client = connectionMultiplexer.GetDatabase();
+                var db = connectionMultiplexer.GetDatabase();
 
-                client.KeyDelete(globalKey);
+                db.KeyDelete(globalKey);
             }
             catch (Exception e)
             {
@@ -284,23 +282,27 @@ namespace NHibernate.Caches.Redis
 
         private void ExecuteEnsureGeneration(Action<StackExchange.Redis.ITransaction> action)
         {
-            var client = connectionMultiplexer.GetDatabase();
+            var db = connectionMultiplexer.GetDatabase();
 
             var executed = false;
 
             while (!executed)
             {
-                var generation = client.StringGet(CacheNamespace.GetGenerationKey());
+                var generation = db.StringGet(CacheNamespace.GetGenerationKey());
                 var serverGeneration = Convert.ToInt64(generation);
 
                 CacheNamespace.SetGeneration(serverGeneration);
 
-                var transaction = client.CreateTransaction();
+                var transaction = db.CreateTransaction();
 
                 // The generation on the server may have been removed.
                 if (serverGeneration < CacheNamespace.GetGeneration())
                 {
-                    client.StringSetAsync(CacheNamespace.GetGenerationKey(), CacheNamespace.GetGeneration().ToString(CultureInfo.InvariantCulture));
+                    db.StringSetAsync(
+                        key: CacheNamespace.GetGenerationKey(),
+                        value: CacheNamespace.GetGeneration(), 
+                        flags: CommandFlags.FireAndForget
+                    );
                 }
 
                 transaction.AddCondition(Condition.StringEqual(CacheNamespace.GetGenerationKey(), CacheNamespace.GetGeneration()));

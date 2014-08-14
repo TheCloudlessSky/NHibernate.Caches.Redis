@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace NHibernate.Caches.Redis
 {
-    public static class ExecExtensions
+    internal static class ExecExtensions
     {
         public static void RetryUntilTrue(Func<bool> action, TimeSpan? timeOut)
         {

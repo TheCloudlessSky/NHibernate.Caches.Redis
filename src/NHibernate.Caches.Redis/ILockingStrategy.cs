@@ -2,7 +2,7 @@ using System;
 
 namespace NHibernate.Caches.Redis
 {
-    public interface ILockingStrategy
+    internal interface ILockingStrategy
     {
         IDisposable ReadLock();
 

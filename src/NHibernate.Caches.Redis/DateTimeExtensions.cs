@@ -2,7 +2,7 @@ using System;
 
 namespace NHibernate.Caches.Redis
 {
-    public static class DateTimeExtensions
+    internal static class DateTimeExtensions
     {
         public const long UnixEpoch = 621355968000000000L;
         private static readonly DateTime MinDateTimeUtc = new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc);
