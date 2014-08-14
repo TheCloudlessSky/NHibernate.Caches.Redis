@@ -42,7 +42,7 @@ namespace NHibernate.Caches.Redis.Sample
             
             clientManager.GetServer("localhost", 6379).FlushAllDatabases();
 
-            RedisCacheProvider.SetClientManager(clientManager);
+            RedisCacheProvider.SetConnectionMultiplexer(clientManager);
 
             var dbFile = HttpContext.Current.Server.MapPath("~/App_Data/sample.db");
 

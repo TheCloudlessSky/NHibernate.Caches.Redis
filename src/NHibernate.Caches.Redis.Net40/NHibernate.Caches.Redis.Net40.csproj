@@ -62,6 +62,7 @@
     <Reference Include="System.Runtime">
       <HintPath>..\..\packages\Microsoft.Bcl.1.1.9\lib\net40\System.Runtime.dll</HintPath>
     </Reference>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Threading.Tasks">
       <HintPath>..\..\packages\Microsoft.Bcl.1.1.9\lib\net40\System.Threading.Tasks.dll</HintPath>
     </Reference>
@@ -85,14 +86,11 @@
     <Compile Include="..\NHibernate.Caches.Redis\ILockingStrategy.cs">
       <Link>ILockingStrategy.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ISerializer.cs">
-      <Link>ISerializer.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\IRedisCacheSerializer.cs">
+      <Link>IRedisCacheSerializer.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ObjectExtensions.cs">
       <Link>ObjectExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ObjectSerializer.cs">
-      <Link>ObjectSerializer.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
@@ -118,6 +116,9 @@
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheProvider.cs">
       <Link>RedisCacheProvider.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheProviderOptions.cs">
+      <Link>RedisCacheProviderOptions.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheProviderSection.cs">
       <Link>RedisCacheProviderSection.cs</Link>
     </Compile>
@@ -126,6 +127,9 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\WriteLock.cs">
       <Link>WriteLock.cs</Link>
+    </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\XmlObjectSerializerRedisCacheSerializer.cs">
+      <Link>XmlObjectSerializerRedisCacheSerializer.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

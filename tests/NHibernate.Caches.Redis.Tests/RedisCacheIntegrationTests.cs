@@ -14,7 +14,7 @@ namespace NHibernate.Caches.Redis.Tests
 
         public RedisCacheIntegrationTests()
         {
-            RedisCacheProvider.InternalSetClientManager(ClientManager);
+            RedisCacheProvider.InternalSetConnectionMultiplexer(ClientManager);
 
             if (File.Exists("tests.db")) { File.Delete("tests.db"); }
 
@@ -34,7 +34,7 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        public void Entity_cache()
+        void Entity_cache()
         {
             using (var sf = CreateSessionFactory())
             {

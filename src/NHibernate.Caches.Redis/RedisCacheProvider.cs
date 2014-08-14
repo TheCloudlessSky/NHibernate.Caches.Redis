@@ -9,40 +9,65 @@ namespace NHibernate.Caches.Redis
 {
     public class RedisCacheProvider : ICacheProvider
     {
-        private static readonly IInternalLogger Log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
-        private static ConnectionMultiplexer clientManagerStatic;
-        private static readonly RedisCacheProviderSection Config;
+        private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
+        private static ConnectionMultiplexer connectionMultiplexerStatic;
+        private static RedisCacheProviderOptions optionsStatic;
+        private static readonly RedisCacheProviderSection providerSection;
+        private static object syncRoot = new object();
 
         static RedisCacheProvider()
         {
-            Config = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection ??
-                     new RedisCacheProviderSection();
+            providerSection = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection ??
+                new RedisCacheProviderSection();
         }
 
-        public static void SetClientManager(ConnectionMultiplexer clientManager)
-        {           
-            if (clientManagerStatic != null)
-                throw new InvalidOperationException("The client manager can only be configured once.");
-
-            clientManagerStatic = clientManager.ThrowIfNull();
-        }
-
-        internal static void InternalSetClientManager(ConnectionMultiplexer clientManager)
+        public static void SetConnectionMultiplexer(ConnectionMultiplexer connectionMultiplexer)
         {
-            clientManagerStatic = clientManager;
+            lock (syncRoot)
+            {
+                if (connectionMultiplexerStatic != null)
+                {
+                    throw new InvalidOperationException("The connection multiplexer can only be configured once.");
+                }
+
+                connectionMultiplexerStatic = connectionMultiplexer.ThrowIfNull();
+            }
+        }
+
+        public static void SetOptions(RedisCacheProviderOptions options)
+        {
+            lock (syncRoot)
+            {
+                if (optionsStatic != null)
+                {
+                    throw new InvalidOperationException("The options can only be configured once.");
+                }
+
+                optionsStatic = options.ThrowIfNull();
+            }
+        }
+
+        internal static void InternalSetConnectionMultiplexer(ConnectionMultiplexer connectionMultiplexer)
+        {
+            connectionMultiplexerStatic = connectionMultiplexer;
+        }
+
+        internal static void InternalSetOptions(RedisCacheProviderOptions options)
+        {
+            optionsStatic = options;
         }
 
         public ICache BuildCache(string regionName, IDictionary<string, string> properties)
         {
-            if (clientManagerStatic == null)
+            if (connectionMultiplexerStatic == null)
             {
                 throw new InvalidOperationException(
-                    "An 'IRedisClientsManager' must be configured with SetClientManager(). " + 
-                    "For example, call 'RedisCacheProvider(new PooledRedisClientManager())' " +
+                    "As 'ConnectionMultiplexer' must be configured with SetConnectionMultiplexer(). " + 
+                    "For example, call 'RedisCacheProvider.SetConnectionMultiplexer(ConnectionMultiplexer.Connect(\"localhost:6379\"))' " +
                     "before creating the ISessionFactory.");
             }
 
-            if (Log.IsDebugEnabled)
+            if (log.IsDebugEnabled)
             {
                 var sb = new StringBuilder();
                 foreach (var pair in properties)
@@ -53,21 +78,32 @@ namespace NHibernate.Caches.Redis
                     sb.Append(pair.Value);
                     sb.Append(";");
                 }
-                Log.Debug("building cache with region: " + regionName + ", properties: " + sb);
+                log.Debug("building cache with region: " + regionName + ", properties: " + sb);
             }
 
             RedisCacheElement configElement = null;
             if (!String.IsNullOrWhiteSpace(regionName))
             {
-                configElement = Config.Caches[regionName];
+                configElement = providerSection.Caches[regionName];
             }
 
-            return BuildCache(regionName, properties, configElement, clientManagerStatic);
+            return BuildCache(regionName, properties, configElement, connectionMultiplexerStatic);
         }
 
-        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, ConnectionMultiplexer clientManager)
+        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, ConnectionMultiplexer connectionMultiplexer)
         {
-            return new RedisCache(regionName, properties, configElement, clientManager);
+            // Double-check so that we don't have to lock if necessary.
+            if (optionsStatic == null)
+            {
+                lock (syncRoot)
+                {
+                    if (optionsStatic == null)
+                    {
+                        optionsStatic = new RedisCacheProviderOptions();
+                    }
+                }
+            }
+            return new RedisCache(regionName, properties, configElement, connectionMultiplexer, optionsStatic);
         }
 
         public long NextTimestamp()
@@ -78,13 +114,13 @@ namespace NHibernate.Caches.Redis
         public void Start(IDictionary<string, string> properties)
         {
             // No-op.
-            Log.Debug("starting cache provider");
+            log.Debug("starting cache provider");
         }
 
         public void Stop()
         {
             // No-op.
-            Log.Debug("stopping cache provider");
+            log.Debug("stopping cache provider");
         }
     }
 }
