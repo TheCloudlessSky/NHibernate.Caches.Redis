@@ -3,10 +3,8 @@ using System.Threading;
 
 namespace NHibernate.Caches.Redis
 {
-    /// <summary>
-    /// This class manages a read lock for a local readers/writer lock, 
-    /// using the Resource Acquisition Is Initialization pattern
-    /// </summary>
+    // From ServiceStack.Redis:
+    // https://github.com/ServiceStack/ServiceStack.Redis/blob/v3/src/ServiceStack.Redis/Support/Locking/ReadLock.cs
     internal class ReadLock : IDisposable
     {
         private readonly ReaderWriterLockSlim _lockObject;

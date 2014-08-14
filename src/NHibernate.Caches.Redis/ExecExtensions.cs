@@ -3,6 +3,8 @@ using System.Threading;
 
 namespace NHibernate.Caches.Redis
 {
+    // From ServiceStack.Common:
+    // https://github.com/ServiceStack/ServiceStack/blob/v3/src/ServiceStack.Common/ExecExtensions.cs
     internal static class ExecExtensions
     {
         public static void RetryUntilTrue(Func<bool> action, TimeSpan? timeOut)

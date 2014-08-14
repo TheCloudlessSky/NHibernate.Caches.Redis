@@ -1,7 +1,20 @@
+//
+// https://github.com/ServiceStack/ServiceStack.Text
+// ServiceStack.Text: .NET C# POCO JSON, JSV and CSV Text Serializers.
+//
+// Authors:
+//   Demis Bellot (demis.bellot@gmail.com)
+//
+// Copyright 2012 ServiceStack Ltd.
+//
+// Licensed under the same terms of ServiceStack: new BSD license.
+//
 using System;
 
 namespace NHibernate.Caches.Redis
 {
+    // From ServiceStack.Text:
+    // https://github.com/ServiceStack/ServiceStack.Text/blob/v3/src/ServiceStack.Text/DateTimeExtensions.cs
     internal static class DateTimeExtensions
     {
         public const long UnixEpoch = 621355968000000000L;
@@ -19,14 +32,7 @@ namespace NHibernate.Caches.Redis
             if (dateTime == DateTime.MinValue)
                 return MinDateTimeUtc;
 
-#if SILVERLIGHT
-    // Silverlight 3, 4 and 5 all work ok with DateTime.ToUniversalTime, but have no TimeZoneInfo.ConverTimeToUtc implementation.
-			return dateTime.ToUniversalTime();
-#else
-            // .Net 2.0 - 3.5 has an issue with DateTime.ToUniversalTime, but works ok with TimeZoneInfo.ConvertTimeToUtc.
-            // .Net 4.0+ does this under the hood anyway.
-            return TimeZoneInfo.ConvertTimeToUtc(dateTime);
-#endif
+            return dateTime.ToUniversalTime();
         }
     }
 }

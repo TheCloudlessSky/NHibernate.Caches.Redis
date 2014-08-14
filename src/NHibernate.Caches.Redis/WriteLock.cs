@@ -3,6 +3,8 @@ using System.Threading;
 
 namespace NHibernate.Caches.Redis
 {
+    // From ServiceStack.Redis:
+    // https://github.com/ServiceStack/ServiceStack.Redis/blob/v3/src/ServiceStack.Redis/Support/Locking/WriteLock.cs
     internal class WriteLock : IDisposable
     {
         private readonly ReaderWriterLockSlim _lockObject;
