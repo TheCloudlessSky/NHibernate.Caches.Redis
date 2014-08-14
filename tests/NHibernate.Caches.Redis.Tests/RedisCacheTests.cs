@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ServiceStack.Redis.Support;
+using StackExchange.Redis;
 using Xunit;
-using ServiceStack.Redis;
 
 namespace NHibernate.Caches.Redis.Tests
 {
     public class RedisCacheTests : RedisTest
     {
-        private readonly ISerializer serializer = new ObjectSerializer();
+        private readonly ISerializer _serializer = new ObjectSerializer();
 
         [Fact]
         public void Constructor_should_set_generation_if_it_does_not_exist()
@@ -43,15 +43,14 @@ namespace NHibernate.Caches.Redis.Tests
 
             // Act
             cache.Put(999, new Person("Foo", 10));
-
             // Assert
             var cacheKey = cache.CacheNamespace.GlobalCacheKey(999);
-            var data = RedisNative.Get(cacheKey);
-            var expiry = Redis.GetTimeToLive(cacheKey);
+            var data = Redis.StringGet(cacheKey);
+            var expiry = Redis.KeyTimeToLive(cacheKey);
 
             Assert.True(expiry >= TimeSpan.FromMinutes(4) && expiry <= TimeSpan.FromMinutes(5));
 
-            var person = serializer.Deserialize(data) as Person;
+            var person = _serializer.Deserialize(data) as Person;
             Assert.NotNull(person);
             Assert.Equal("Foo", person.Name);
             Assert.Equal(10, person.Age);
@@ -70,7 +69,7 @@ namespace NHibernate.Caches.Redis.Tests
 
             // Assert
             var cacheKey = cache.CacheNamespace.GlobalCacheKey(999);
-            var expiry = Redis.GetTimeToLive(cacheKey);
+            var expiry = Redis.KeyTimeToLive(cacheKey);
             Assert.True(expiry >= TimeSpan.FromMinutes(98) && expiry <= TimeSpan.FromMinutes(99));
         }
 
@@ -81,15 +80,15 @@ namespace NHibernate.Caches.Redis.Tests
             var cache = new RedisCache("region", this.ClientManager);
 
             // Another client incremented the generation.
-            Redis.Increment(cache.CacheNamespace.GetGenerationKey(), 100);
+            Redis.StringIncrement(cache.CacheNamespace.GetGenerationKey(), 100);
 
             // Act
             cache.Put(999, new Person("Foo", 10));
 
             // Assert
             Assert.Equal(cache.CacheNamespace.GetGeneration(), 101);
-            var data = RedisNative.Get(cache.CacheNamespace.GlobalCacheKey(999));
-            var person = (Person)serializer.Deserialize(data);
+            var data = Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(999));
+            var person = (Person)_serializer.Deserialize(data);
             Assert.Equal("Foo", person.Name);
             Assert.Equal(10, person.Age);
         }
@@ -127,11 +126,11 @@ namespace NHibernate.Caches.Redis.Tests
         public void Get_should_retry_until_generation_matches_the_server()
         {
             // Arrange
-            var cache1 = new RedisCache("region", this.ClientManager);
+            var cache1 = new RedisCache("region", ClientManager);
 
             // Another client incremented the generation.
-            Redis.Increment(cache1.CacheNamespace.GetGenerationKey(), 100);
-            var cache2 = new RedisCache("region", this.ClientManager);
+            Redis.StringIncrement(cache1.CacheNamespace.GetGenerationKey(), 100);
+            var cache2 = new RedisCache("region", ClientManager);
             cache2.Put(999, new Person("Foo", 10));
 
             // Act
@@ -172,8 +171,8 @@ namespace NHibernate.Caches.Redis.Tests
             cache.Remove(999);
 
             // Assert
-            var result = Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(999));
-            Assert.Null(result);
+            var result = Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(999));
+            Assert.False(result.HasValue);
         }
 
         [Fact]
@@ -183,7 +182,7 @@ namespace NHibernate.Caches.Redis.Tests
             var cache1 = new RedisCache("region", this.ClientManager);
 
             // Another client incremented the generation.
-            Redis.Increment(cache1.CacheNamespace.GetGenerationKey(), 100);
+            Redis.StringIncrement(cache1.CacheNamespace.GetGenerationKey(), 100);
             var cache2 = new RedisCache("region", this.ClientManager);
             cache2.Put(999, new Person("Foo", 10));
 
@@ -192,8 +191,8 @@ namespace NHibernate.Caches.Redis.Tests
 
             // Assert
             Assert.Equal(101, cache1.CacheNamespace.GetGeneration());
-            var result = Redis.GetValue(cache1.CacheNamespace.GlobalCacheKey(999));
-            Assert.Null(result);
+            var result = Redis.StringGet(cache1.CacheNamespace.GlobalCacheKey(999));
+            Assert.False(result.HasValue);
         }
 
         [Fact]
@@ -217,19 +216,19 @@ namespace NHibernate.Caches.Redis.Tests
             
             // New generation.
             Assert.Equal(2, cache.CacheNamespace.GetGeneration());
-            Assert.Null(Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(1)));
-            Assert.Null(Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(2)));
-            Assert.Null(Redis.GetValue(cache.CacheNamespace.GlobalCacheKey(3)));
+            Assert.False(Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(1)).HasValue);
+            Assert.False(Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(2)).HasValue);
+            Assert.False(Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(3)).HasValue);
             
             // List of keys for this region was cleared.
-            Assert.Null(Redis.GetValue(globalKeysKey));
+            Assert.False(Redis.StringGet(globalKeysKey).HasValue);
 
             // The old values will expire automatically.
-            var ttl1 = Redis.GetTimeToLive(oldKey1);
+            var ttl1 = Redis.KeyTimeToLive(oldKey1);
             Assert.True(ttl1 <= TimeSpan.FromMinutes(5));
-            var ttl2 = Redis.GetTimeToLive(oldKey2);
+            var ttl2 = Redis.KeyTimeToLive(oldKey2);
             Assert.True(ttl2 <= TimeSpan.FromMinutes(5));
-            var ttl3 = Redis.GetTimeToLive(oldKey3);
+            var ttl3 = Redis.KeyTimeToLive(oldKey3);
             Assert.True(ttl3 <= TimeSpan.FromMinutes(5));
         }
 
@@ -237,10 +236,10 @@ namespace NHibernate.Caches.Redis.Tests
         public void Clear_should_ensure_generation_if_another_cache_has_already_incremented_the_generation()
         {
             // Arrange
-            var cache = new RedisCache("region", this.ClientManager);
+            var cache = new RedisCache("region", ClientManager);
 
             // Another cache updated its generation (by clearing).
-            Redis.Increment(cache.CacheNamespace.GetGenerationKey(), 100);
+            Redis.StringIncrement(cache.CacheNamespace.GetGenerationKey(), 100);
 
             // Act
             cache.Clear();
@@ -352,7 +351,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         public void Put_and_Get_should_silently_continue_if_SocketException()
         {
-            using (var invalidClientManager = new BasicRedisClientManager(InvalidHost))
+            using (var invalidClientManager = ConnectionMultiplexer.Connect(InvalidHost))
             {
                 // Arrange
                 const int key = 1;
@@ -369,7 +368,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         public void Lock_and_Unlock_should_silently_continue_if_SocketException()
         {
-            using (var invalidClientManager = new BasicRedisClientManager(InvalidHost))
+            using (var invalidClientManager = ConnectionMultiplexer.Connect(InvalidHost))
             {
                 // Arrange
                 const int key = 1;
@@ -388,7 +387,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         public void Remove_should_silently_continue_if_SocketException()
         {
-            using (var invalidClientManager = new BasicRedisClientManager(InvalidHost))
+            using (var invalidClientManager = ConnectionMultiplexer.Connect(InvalidHost))
             {
                 // Arrange
                 const int key = 1;
@@ -407,16 +406,16 @@ namespace NHibernate.Caches.Redis.Tests
         {
             // Arrange
             const int key = 1;
-            var cache = new RedisCache("region", this.ClientManager);
+            var cache = new RedisCache("region", ClientManager);
 
             // Act
             cache.Put(key, new Person("A", 1));
-            Redis.FlushDb();
+            FlushDb();
             cache.Put(key, new Person("B", 2));
 
             // Assert
             var generationKey = cache.CacheNamespace.GetGenerationKey();
-            Assert.Equal(cache.CacheNamespace.GetGeneration().ToString(), Redis.GetValue(generationKey));
+            Assert.Equal(cache.CacheNamespace.GetGeneration().ToString(CultureInfo.InvariantCulture), (string)Redis.StringGet(generationKey));
         }
     }
 }

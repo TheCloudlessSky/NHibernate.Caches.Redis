@@ -1,40 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using NHibernate.Cache;
-using ServiceStack.Redis;
 using System.Configuration;
+using StackExchange.Redis;
 
 namespace NHibernate.Caches.Redis
 {
     public class RedisCacheProvider : ICacheProvider
     {
-        private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
-        private static IRedisClientsManager clientManagerStatic;
-        private static RedisCacheProviderSection config;
+        private static readonly IInternalLogger Log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
+        private static ConnectionMultiplexer clientManagerStatic;
+        private static readonly RedisCacheProviderSection Config;
 
         static RedisCacheProvider()
         {
-            config = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection;
-
-            if (config == null)
-            {
-                config = new RedisCacheProviderSection();
-            }
+            Config = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection ??
+                     new RedisCacheProviderSection();
         }
 
-        public static void SetClientManager(IRedisClientsManager clientManager)
+        public static void SetClientManager(ConnectionMultiplexer clientManager)
         {           
             if (clientManagerStatic != null)
-            {
                 throw new InvalidOperationException("The client manager can only be configured once.");
-            }
 
             clientManagerStatic = clientManager.ThrowIfNull();
         }
 
-        internal static void InternalSetClientManager(IRedisClientsManager clientManager)
+        internal static void InternalSetClientManager(ConnectionMultiplexer clientManager)
         {
             clientManagerStatic = clientManager;
         }
@@ -49,7 +42,7 @@ namespace NHibernate.Caches.Redis
                     "before creating the ISessionFactory.");
             }
 
-            if (log.IsDebugEnabled)
+            if (Log.IsDebugEnabled)
             {
                 var sb = new StringBuilder();
                 foreach (var pair in properties)
@@ -60,19 +53,19 @@ namespace NHibernate.Caches.Redis
                     sb.Append(pair.Value);
                     sb.Append(";");
                 }
-                log.Debug("building cache with region: " + regionName + ", properties: " + sb);
+                Log.Debug("building cache with region: " + regionName + ", properties: " + sb);
             }
 
             RedisCacheElement configElement = null;
             if (!String.IsNullOrWhiteSpace(regionName))
             {
-                configElement = config.Caches[regionName];
+                configElement = Config.Caches[regionName];
             }
 
             return BuildCache(regionName, properties, configElement, clientManagerStatic);
         }
 
-        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, IRedisClientsManager clientManager)
+        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, ConnectionMultiplexer clientManager)
         {
             return new RedisCache(regionName, properties, configElement, clientManager);
         }
@@ -85,13 +78,13 @@ namespace NHibernate.Caches.Redis
         public void Start(IDictionary<string, string> properties)
         {
             // No-op.
-            log.Debug("starting cache provider");
+            Log.Debug("starting cache provider");
         }
 
         public void Stop()
         {
             // No-op.
-            log.Debug("stopping cache provider");
+            Log.Debug("stopping cache provider");
         }
     }
 }
