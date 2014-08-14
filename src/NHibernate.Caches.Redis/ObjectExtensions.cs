@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NHibernate.Caches.Redis
 {
-    static class ObjectExtensions
+    internal static class ObjectExtensions
     {
         public static T ThrowIfNull<T>(this T source)
             where T : class
