@@ -110,7 +110,7 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var data = options.Serializer.Serialize(value);
+                var data = Serialize(value);
 
                 ExecuteEnsureGeneration(transaction =>
                 {
@@ -153,7 +153,7 @@ namespace NHibernate.Caches.Redis
                 if (dataResult != null)
                     data = dataResult.Result;
 
-                return options.Serializer.Deserialize(data);
+                return Deserialize(data);
 
             }
             catch (Exception e)
@@ -311,13 +311,38 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        protected virtual void OnException(RedisCacheExceptionEventArgs e)
+        private RedisValue Serialize(object value)
         {
-            var isSocketException = e.Exception is RedisConnectionException || e.Exception is SocketException || e.Exception.InnerException is SocketException;
-
-            if (!isSocketException)
+            if (options.Serializer == null)
             {
-                e.Throw = true;
+                throw new InvalidOperationException("A serializer was not configured on the RedisCacheProviderOptions.");
+            }
+            return options.Serializer.Serialize(value);
+        }
+
+        private object Deserialize(RedisValue value)
+        {
+            if (options.Serializer == null)
+            {
+                throw new InvalidOperationException("A serializer was not configured on the RedisCacheProviderOptions.");
+            }
+            return options.Serializer.Deserialize(value);
+        }
+
+        private void OnException(RedisCacheExceptionEventArgs e)
+        {
+            if (options.OnException == null)
+            {
+                var isSocketException = e.Exception is RedisConnectionException || e.Exception is SocketException || e.Exception.InnerException is SocketException;
+
+                if (!isSocketException)
+                {
+                    e.Throw = true;
+                }
+            }
+            else
+            {
+                options.OnException(e);
             }
         }
     }
