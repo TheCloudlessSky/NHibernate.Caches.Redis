@@ -14,7 +14,7 @@ namespace NHibernate.Caches.Redis.Tests
 
         public RedisCacheIntegrationTests()
         {
-            RedisCacheProvider.InternalSetConnectionMultiplexer(ClientManager);
+            RedisCacheProvider.InternalSetConnectionMultiplexer(ConnectionMultiplexer);
 
             if (File.Exists("tests.db")) { File.Delete("tests.db"); }
 

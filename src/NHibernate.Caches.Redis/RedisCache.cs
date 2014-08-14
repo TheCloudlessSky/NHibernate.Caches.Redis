@@ -27,8 +27,8 @@ namespace NHibernate.Caches.Redis
         public RedisNamespace CacheNamespace { get; private set; }
         public int Timeout { get { return Timestamper.OneMs * 60000; } }
 
-        public RedisCache(string regionName, ConnectionMultiplexer clientManager, RedisCacheProviderOptions options)
-            : this(regionName, new Dictionary<string, string>(), null, clientManager, options)
+        public RedisCache(string regionName, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
+            : this(regionName, new Dictionary<string, string>(), null, connectionMultiplexer, options)
         {
 
         }

@@ -38,11 +38,10 @@ namespace NHibernate.Caches.Redis.Sample
             RegisterGlobalFilters(GlobalFilters.Filters);
             RegisterRoutes(RouteTable.Routes);
 
-            var clientManager = ConnectionMultiplexer.Connect("localhost:6379");
-            
-            clientManager.GetServer("localhost", 6379).FlushAllDatabases();
+            var connectionMultiplexer = ConnectionMultiplexer.Connect("localhost:6379");
+            connectionMultiplexer.GetServer("localhost", 6379).FlushAllDatabases();
 
-            RedisCacheProvider.SetConnectionMultiplexer(clientManager);
+            RedisCacheProvider.SetConnectionMultiplexer(connectionMultiplexer);
 
             var dbFile = HttpContext.Current.Server.MapPath("~/App_Data/sample.db");
 

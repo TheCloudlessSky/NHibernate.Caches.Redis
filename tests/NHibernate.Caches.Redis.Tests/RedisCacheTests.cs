@@ -17,7 +17,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Constructor_should_set_generation_if_it_does_not_exist()
         {
-            var cache = new RedisCache("regionName", ClientManager, options);
+            var cache = new RedisCache("regionName", ConnectionMultiplexer, options);
 
             var genKey = cache.CacheNamespace.GetGenerationKey();
             Assert.Contains("NHibernate-Cache:regionName", genKey);
@@ -28,8 +28,8 @@ namespace NHibernate.Caches.Redis.Tests
         void Constructor_should_get_current_generation_if_it_already_exists()
         {
             // Distributed caches.
-            var cache1 = new RedisCache("regionName", ClientManager, options);
-            var cache2 = new RedisCache("regionName", ClientManager, options);
+            var cache1 = new RedisCache("regionName", ConnectionMultiplexer, options);
+            var cache2 = new RedisCache("regionName", ConnectionMultiplexer, options);
 
             Assert.Equal(1, cache1.CacheNamespace.GetGeneration());
             Assert.Equal(1, cache2.CacheNamespace.GetGeneration());
@@ -39,7 +39,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Put_should_serialize_item_and_set_with_expiry()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Act
             cache.Put(999, new Person("Foo", 10));
@@ -62,7 +62,7 @@ namespace NHibernate.Caches.Redis.Tests
             // Arrange
             var configElement = new RedisCacheElement("region", TimeSpan.FromMinutes(99));
             var props = new Dictionary<string, string>();
-            var cache = new RedisCache("region", props, configElement, ClientManager, options);
+            var cache = new RedisCache("region", props, configElement, ConnectionMultiplexer, options);
 
             // Act
             cache.Put(999, new Person("Foo", 10));
@@ -77,7 +77,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Put_should_retry_until_generation_matches_the_server()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Another client incremented the generation.
             Redis.StringIncrement(cache.CacheNamespace.GetGenerationKey(), 100);
@@ -97,7 +97,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Get_should_deserialize_data()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
             cache.Put(999, new Person("Foo", 10));
 
             // Act
@@ -113,7 +113,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Get_should_return_null_if_not_exists()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Act
             var person = cache.Get(99999) as Person;
@@ -126,11 +126,11 @@ namespace NHibernate.Caches.Redis.Tests
         void Get_should_retry_until_generation_matches_the_server()
         {
             // Arrange
-            var cache1 = new RedisCache("region", ClientManager, options);
+            var cache1 = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Another client incremented the generation.
             Redis.StringIncrement(cache1.CacheNamespace.GetGenerationKey(), 100);
-            var cache2 = new RedisCache("region", ClientManager, options);
+            var cache2 = new RedisCache("region", ConnectionMultiplexer, options);
             cache2.Put(999, new Person("Foo", 10));
 
             // Act
@@ -148,8 +148,8 @@ namespace NHibernate.Caches.Redis.Tests
         {
             // Arrange
             const int key = 1;
-            var cache1 = new RedisCache("region_A", ClientManager, options);
-            var cache2 = new RedisCache("region_B", ClientManager, options);
+            var cache1 = new RedisCache("region_A", ConnectionMultiplexer, options);
+            var cache2 = new RedisCache("region_B", ConnectionMultiplexer, options);
 
             // Act
             cache1.Put(key, new Person("A", 1));
@@ -164,7 +164,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Remove_should_remove_from_cache()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
             cache.Put(999, new Person("Foo", 10));
 
             // Act
@@ -179,11 +179,11 @@ namespace NHibernate.Caches.Redis.Tests
         void Remove_should_retry_until_generation_matches_the_server()
         {
             // Arrange
-            var cache1 = new RedisCache("region", ClientManager, options);
+            var cache1 = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Another client incremented the generation.
             Redis.StringIncrement(cache1.CacheNamespace.GetGenerationKey(), 100);
-            var cache2 = new RedisCache("region", ClientManager, options);
+            var cache2 = new RedisCache("region", ConnectionMultiplexer, options);
             cache2.Put(999, new Person("Foo", 10));
 
             // Act
@@ -199,7 +199,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Clear_update_generation_and_clear_keys_for_this_region()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
             cache.Put(1, new Person("Foo", 1));
             cache.Put(2, new Person("Bar", 2));
             cache.Put(3, new Person("Baz", 3));
@@ -236,7 +236,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Clear_should_ensure_generation_if_another_cache_has_already_incremented_the_generation()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Another cache updated its generation (by clearing).
             Redis.StringIncrement(cache.CacheNamespace.GetGenerationKey(), 100);
@@ -252,7 +252,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Destroy_should_not_clear()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Act
             cache.Destroy();
@@ -265,7 +265,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Lock_and_Unlock_concurrently_with_same_cache_client()
         {
             // Arrange
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
             cache.Put(1, new Person("Foo", 1));
 
             var results = new ConcurrentQueue<string>();
@@ -308,7 +308,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Lock_and_Unlock_concurrently_with_different_cache_clients()
         {
             // Arrange
-            var mainCache = new RedisCache("region", ClientManager, options);
+            var mainCache = new RedisCache("region", ConnectionMultiplexer, options);
             mainCache.Put(1, new Person("Foo", 1));
 
             var results = new ConcurrentQueue<string>();
@@ -321,7 +321,7 @@ namespace NHibernate.Caches.Redis.Tests
                 int clientNumber = i;
                 var t = Task.Factory.StartNew(() =>
                 {
-                    var cacheX = new RedisCache("region", ClientManager, options);
+                    var cacheX = new RedisCache("region", ConnectionMultiplexer, options);
                     cacheX.Lock(1);
                     results.Enqueue(clientNumber + " lock");
 
@@ -351,11 +351,11 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Put_and_Get_should_silently_continue_if_SocketException()
         {
-            using (var invalidClientManager = ConnectionMultiplexer.Connect(InvalidHost))
+            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidHost))
             {
                 // Arrange
                 const int key = 1;
-                var cache = new RedisCache("region_A", invalidClientManager, options);
+                var cache = new RedisCache("region_A", invalidConnectionMultiplexer, options);
 
                 // Act
                 cache.Put(key, new Person("A", 1));
@@ -368,11 +368,11 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Lock_and_Unlock_should_silently_continue_if_SocketException()
         {
-            using (var invalidClientManager = ConnectionMultiplexer.Connect(InvalidHost))
+            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidHost))
             {
                 // Arrange
                 const int key = 1;
-                var cache = new RedisCache("region_A", invalidClientManager, options);
+                var cache = new RedisCache("region_A", invalidConnectionMultiplexer, options);
 
                 // Act / Assert
                 Assert.DoesNotThrow(() =>
@@ -387,11 +387,11 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Remove_should_silently_continue_if_SocketException()
         {
-            using (var invalidClientManager = ConnectionMultiplexer.Connect(InvalidHost))
+            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidHost))
             {
                 // Arrange
                 const int key = 1;
-                var cache = new RedisCache("region_A", invalidClientManager, options);
+                var cache = new RedisCache("region_A", invalidConnectionMultiplexer, options);
 
                 // Act
                 Assert.DoesNotThrow(() =>
@@ -406,7 +406,7 @@ namespace NHibernate.Caches.Redis.Tests
         {
             // Arrange
             const int key = 1;
-            var cache = new RedisCache("region", ClientManager, options);
+            var cache = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Act
             cache.Put(key, new Person("A", 1));
