@@ -40,9 +40,16 @@ namespace NHibernate.Caches.Redis
 
             RegionName = regionName.ThrowIfNull("regionName");
 
-            expiry = element != null
-                ? element.Expiration
-                : TimeSpan.FromSeconds(PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, DefaultExpiry));
+            if (element == null)
+            {
+                expiry = TimeSpan.FromSeconds(
+                    PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, DefaultExpiry)
+                );
+            }
+            else
+            {
+                expiry = element.Expiration;
+            }
 
             log.DebugFormat("using expiration : {0} seconds", expiry.TotalSeconds);
 
@@ -91,15 +98,17 @@ namespace NHibernate.Caches.Redis
             var generationKey = CacheNamespace.GetGenerationKey();
             var attemptedGeneration = db.StringGet(generationKey);
 
-            if (!attemptedGeneration.HasValue)
+            if (attemptedGeneration.HasValue)
+            {
+                log.DebugFormat("using existing generation : {0}", attemptedGeneration);
+                return Convert.ToInt64(attemptedGeneration);
+            }
+            else
             {
                 var generation = db.StringIncrement(generationKey);
                 log.DebugFormat("creating new generation : {0}", generation);
                 return generation;
             }
-
-            log.DebugFormat("using existing generation : {0}", attemptedGeneration);
-            return Convert.ToInt64(attemptedGeneration);
         }
 
         public virtual void Put(object key, object value)
@@ -116,10 +125,9 @@ namespace NHibernate.Caches.Redis
                 ExecuteEnsureGeneration(transaction =>
                 {
                     var cacheKey = CacheNamespace.GlobalCacheKey(key);
-
                     transaction.StringSetAsync(cacheKey, data, expiry);
-                    var globalKeysKey = CacheNamespace.GetGlobalKeysKey();
 
+                    var globalKeysKey = CacheNamespace.GetGlobalKeysKey();
                     transaction.SetAddAsync(globalKeysKey, cacheKey);
                 });
             }
@@ -177,7 +185,6 @@ namespace NHibernate.Caches.Redis
                 ExecuteEnsureGeneration(transaction =>
                 {
                     var cacheKey = CacheNamespace.GlobalCacheKey(key);
-
                     transaction.KeyDeleteAsync(cacheKey, CommandFlags.FireAndForget);
                 });
             }
@@ -242,7 +249,9 @@ namespace NHibernate.Caches.Redis
                     var wasSet = db.StringSet(globalKey, "lock " + DateTime.UtcNow.ToUnixTime(), when: When.NotExists);
 
                     if (wasSet)
+                    {
                         acquiredLocks[key] = globalKey;
+                    }
 
                     return wasSet;
                 }, lockTimeout);
