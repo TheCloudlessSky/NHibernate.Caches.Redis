@@ -87,7 +87,7 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
             }
         }
 
@@ -137,7 +137,7 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
             }
         }
 
@@ -168,7 +168,7 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
 
                 return null;
             }
@@ -194,7 +194,7 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
             }
         }
 
@@ -224,7 +224,7 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
             }
         }
 
@@ -262,14 +262,14 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
             }
         }
 
         public virtual void Unlock(object key)
         {
             string globalKey;
-            if (!acquiredLocks.TryGetValue(key, out globalKey)) { return; }
+            if (!acquiredLocks.TryGetValue(key, out globalKey)) return;
 
             log.DebugFormat("releasing cache lock : {0}", key);
 
@@ -285,7 +285,7 @@ namespace NHibernate.Caches.Redis
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
-                if (evtArg.Throw) { throw; }
+                if (evtArg.Throw) throw;
             }
         }
 
