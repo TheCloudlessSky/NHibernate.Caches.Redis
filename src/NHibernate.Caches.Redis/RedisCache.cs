@@ -15,7 +15,10 @@ namespace NHibernate.Caches.Redis
 
         private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCache));
 
+        // The acquired locks do not need to be distributed into Redis because
+        // the same ISession will lock/unlock an object.
         private readonly Dictionary<object, string> acquiredLocks = new Dictionary<object, string>();
+
         private readonly ConnectionMultiplexer connectionMultiplexer;
         private readonly RedisCacheProviderOptions options;
         private readonly TimeSpan expiry;
