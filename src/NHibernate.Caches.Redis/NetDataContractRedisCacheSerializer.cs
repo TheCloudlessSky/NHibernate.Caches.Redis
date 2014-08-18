@@ -11,8 +11,8 @@ namespace NHibernate.Caches.Redis
     {
         protected override XmlObjectSerializer CreateSerializer()
         {
-                var serializer = new NetDataContractSerializer();
-                return serializer;
+            var serializer = new NetDataContractSerializer();
+            return serializer;
         }
     }
 }
