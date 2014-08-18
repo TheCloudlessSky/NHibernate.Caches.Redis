@@ -89,6 +89,9 @@
     <Compile Include="..\NHibernate.Caches.Redis\IRedisCacheSerializer.cs">
       <Link>IRedisCacheSerializer.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\NetDataContractRedisCacheSerializer.cs">
+      <Link>NetDataContractRedisCacheSerializer.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ObjectExtensions.cs">
       <Link>ObjectExtensions.cs</Link>
     </Compile>
@@ -128,8 +131,8 @@
     <Compile Include="..\NHibernate.Caches.Redis\WriteLock.cs">
       <Link>WriteLock.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\XmlObjectSerializerRedisCacheSerializer.cs">
-      <Link>XmlObjectSerializerRedisCacheSerializer.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\XmlRedisCacheSerializerBase.cs">
+      <Link>XmlRedisCacheSerializerBase.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

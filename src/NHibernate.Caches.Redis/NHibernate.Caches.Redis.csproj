@@ -66,8 +66,9 @@
     <Compile Include="ExecExtensions.cs" />
     <Compile Include="ILockingStrategy.cs" />
     <Compile Include="IRedisCacheSerializer.cs" />
+    <Compile Include="NetDataContractRedisCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
-    <Compile Include="XmlObjectSerializerRedisCacheSerializer.cs" />
+    <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReaderWriterLockingStrategy.cs" />
     <Compile Include="ReadLock.cs" />

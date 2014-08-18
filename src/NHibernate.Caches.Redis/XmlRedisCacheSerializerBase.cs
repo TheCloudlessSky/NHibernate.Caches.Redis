@@ -4,9 +4,9 @@ using StackExchange.Redis;
 
 namespace NHibernate.Caches.Redis
 {
-    public class XmlObjectSerializerRedisCacheSerializer : IRedisCacheSerializer
+    public abstract class XmlRedisCacheSerializerBase : IRedisCacheSerializer
     {
-        public XmlObjectSerializerRedisCacheSerializer()
+        public XmlRedisCacheSerializerBase()
         {
 
         }
@@ -39,10 +39,6 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        protected virtual XmlObjectSerializer CreateSerializer()
-        {
-            var serializer = new NetDataContractSerializer();
-            return serializer;
-        }
+        protected abstract XmlObjectSerializer CreateSerializer();
     }
 }
