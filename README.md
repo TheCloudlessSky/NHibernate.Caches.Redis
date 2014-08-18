@@ -171,4 +171,9 @@ Changelog
 
 ---
 
+Contributors
+------------
+
+@MattiasJakobsson and @Tazer for helping switch over to `StackExchange.Redis`.
+
 Happy caching!
