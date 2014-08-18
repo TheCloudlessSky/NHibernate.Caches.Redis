@@ -141,7 +141,6 @@ public class RequestRecoveryRedisCacheProvider : RedisCacheProvider
         };
 
         return new RequestRecoveryRedisCache(regionName, properties, configElement, connectionMultiplexer, options);
-
     }
 }
 
@@ -150,6 +149,17 @@ Then, use `RequestRecoveryRedisCacheProvider` in your `web.config` settings.
 
 Changelog
 ---------
+
+**2.0.0**
+- Switch the Redis library to [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) because of licensing changes with
+ServiceStack.Redis. This obviously causes a few breaking changes with the
+constructors.
+- Introduce `RedisCacheProvider.SetOptions` so that you don't need to subclass
+to override `OnException`.
+- Allow the serializer to be customized by implementing `IRedisCacheSerializer`
+and setting the `Serializer` on the options. The default serializer uses the
+`NetDataContractSerializer`.
+
 
 **1.3.0**
 - Add the `OnException` method for sub-classing the cache client and handling 

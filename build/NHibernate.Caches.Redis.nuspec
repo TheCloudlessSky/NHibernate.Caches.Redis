@@ -10,10 +10,10 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>-->
     <description>An NHibernate caching provider for Redis.</description>
     <!--<releaseNotes>Initial release.</releaseNotes>-->
-    <copyright>Copyright Harbour Inc. 2012</copyright>
+    <copyright>Copyright Harbour Inc. 2014</copyright>
     <tags>redis caching nhibernate cache provider</tags>
     <dependencies>
-      <dependency id="ServiceStack.Redis" version="[3.0,)" />
+      <dependency id="StackExchange.Redis" version="[1.0.322,)" />
       <dependency id="NHibernate" version="[3.3,)" />
     </dependencies>
   </metadata>
