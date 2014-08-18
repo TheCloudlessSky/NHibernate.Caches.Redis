@@ -74,7 +74,7 @@ namespace NHibernate.Caches.Redis
             return Timestamper.Next();
         }
 
-        protected void SyncGeneration()
+        private void SyncGeneration()
         {
             try
             {
