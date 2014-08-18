@@ -23,27 +23,31 @@ Configure NHibernate to use the custom cache provider:
     NHibernate.Caches.Redis</property>
 ```
 
-Set the `IRedisClientsManager` (pooled, basic, etc) on the `RedisCacheProvider`
+Set the `ConnectionMultiplexer` on the `RedisCacheProvider`
 *before* creating your `ISessionFactory`:
 
 ```csharp
 // Or use your IoC container to wire this up.
-var clientManager = new PooledRedisClientManager("localhost:6379");
-RedisCacheProvider.SetClientManager(clientManager);
+var connectionMultiplexer = ConnectionMultiplexer.Connect("localhost:6379");
+RedisCacheProvider.SetConnectionMultiplexer(connectionMultiplexer);
 
 using (var sessionFactory = ...)
 {
     // ...
 }
 
-clientManager.Dispose();
+// When your application exits:
+connectionMultiplexer.Dispose();
 ```
+
+Check out the `NHibernate.Caches.Redis.Sample` project to learn more.
 
 Configuration
 -------------
 
 Inside of the `app/web.config`, a custom configuration section can be added to
-configure each cache region:
+configure each cache region. For example, this feature allows you to control the
+expiration for a specific class that you cache.
 
 ```xml
 <configSections>
