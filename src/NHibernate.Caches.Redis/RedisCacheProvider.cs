@@ -62,9 +62,22 @@ namespace NHibernate.Caches.Redis
             if (connectionMultiplexerStatic == null)
             {
                 throw new InvalidOperationException(
-                    "As 'ConnectionMultiplexer' must be configured with SetConnectionMultiplexer(). " + 
+                    "A 'ConnectionMultiplexer' must be configured with SetConnectionMultiplexer(). " + 
                     "For example, call 'RedisCacheProvider.SetConnectionMultiplexer(ConnectionMultiplexer.Connect(\"localhost:6379\"))' " +
-                    "before creating the ISessionFactory.");
+                    "before creating the ISessionFactory."
+                );
+            }
+
+            // Double-check so that we don't have to lock if necessary.
+            if (optionsStatic == null)
+            {
+                lock (syncRoot)
+                {
+                    if (optionsStatic == null)
+                    {
+                        optionsStatic = new RedisCacheProviderOptions();
+                    }
+                }
             }
 
             if (log.IsDebugEnabled)
@@ -87,23 +100,12 @@ namespace NHibernate.Caches.Redis
                 configElement = providerSection.Caches[regionName];
             }
 
-            return BuildCache(regionName, properties, configElement, connectionMultiplexerStatic);
+            return BuildCache(regionName, properties, configElement, connectionMultiplexerStatic, optionsStatic);
         }
 
-        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, ConnectionMultiplexer connectionMultiplexer)
+        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
-            // Double-check so that we don't have to lock if necessary.
-            if (optionsStatic == null)
-            {
-                lock (syncRoot)
-                {
-                    if (optionsStatic == null)
-                    {
-                        optionsStatic = new RedisCacheProviderOptions();
-                    }
-                }
-            }
-            return new RedisCache(regionName, properties, configElement, connectionMultiplexer, optionsStatic);
+            return new RedisCache(regionName, properties, configElement, connectionMultiplexer, options);
         }
 
         public long NextTimestamp()
