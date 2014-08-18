@@ -272,7 +272,11 @@ namespace NHibernate.Caches.Redis
         public virtual void Unlock(object key)
         {
             string globalKey;
-            if (!acquiredLocks.TryGetValue(key, out globalKey)) return;
+            if (!acquiredLocks.TryGetValue(key, out globalKey))
+            {
+                log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired");
+                return;
+            }
 
             log.DebugFormat("releasing cache lock : {0}", key);
 
