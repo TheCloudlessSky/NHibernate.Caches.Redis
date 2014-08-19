@@ -77,8 +77,8 @@ public class RequestRecoveryRedisCache : RedisCache
 {
     public const string SkipNHibernateCacheKey = "__SkipNHibernateCache__";
 
-    public RequestRecoveryRedisCache(string regionName, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
-        : base(regionName, connectionMultiplexer, options)
+    public RequestRecoveryRedisCache(string regionName, IDictionary<string, string> properties, RedisCacheElement element, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
+        : base(regionName, properties, element, connectionMultiplexer, options)
     {
 
     }
