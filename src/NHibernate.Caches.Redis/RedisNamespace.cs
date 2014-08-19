@@ -1,156 +1,81 @@
+using System;
+using System.Threading;
 namespace NHibernate.Caches.Redis
 {
-    // From ServiceStack.Redis:
+    // Derived from ServiceStack.Redis:
     // https://github.com/ServiceStack/ServiceStack.Redis/blob/v3/src/ServiceStack.Redis/Support/RedisNamespace.cs
-    internal class RedisNamespace
+    internal class RedisNamespace : IDisposable
     {
+        private readonly ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
 
-        private const string UniqueCharacter = "?";
+        private readonly string prefix;
+        private readonly string setOfKeysKey;
+        private readonly string generationKey;
 
-        //make reserved keys unique by tacking N of these to the beginning of the string
-        private const string ReservedTag = "@" + UniqueCharacter + "@";
+        private long generation = -1;
 
-        //unique separator between namespace and key
-        private const string NamespaceKeySeparator = "#" + UniqueCharacter + "#";
-
-        //make non-static keys unique by tacking on N of these to the end of the string
-        public const string KeyTag = "%" + UniqueCharacter + "%";
-
-        public const string NamespaceTag = "!" + UniqueCharacter + "!";
-
-        //remove any odd numbered runs of the UniqueCharacter character
-        private const string Sanitizer = UniqueCharacter + UniqueCharacter;
-
-        // namespace generation - when generation changes, namespace is slated for garbage collection
-        private long _namespaceGeneration = -1;
-
-        // key for namespace generation
-        private readonly string _namespaceGenerationKey;
-
-        //sanitized name for namespace (includes namespace generation)
-        private readonly string _namespacePrefix;
-
-        //reserved, unique name for meta entries for this namespace
-
-        // key for set of all global keys in this namespace
-        private readonly string _globalKeysKey;
-
-        // key for list of keys slated for garbage collection
-        public const string NamespacesGarbageKey = ReservedTag + "REDIS_NAMESPACES_GARBAGE";
-
-        public const int NumTagsForKey = 0;
-        public const int NumTagsForLockKey = 1;
-
-        public RedisNamespace(string name)
+        public RedisNamespace(string prefix)
         {
-            _namespacePrefix = Sanitize(name);
-
-            var namespaceReservedName = NamespaceTag + _namespacePrefix;
-
-            _globalKeysKey = namespaceReservedName;
-
-            //get generation
-            _namespaceGenerationKey = namespaceReservedName + "_" + "generation";
-
-            LockingStrategy = new ReaderWriterLockingStrategy();
+            this.prefix = prefix;
+            this.setOfKeysKey = prefix + ":keys";
+            this.generationKey = prefix + ":generation";
         }
-        /// <summary>
-        /// get locking strategy
-        /// </summary>
-        public ILockingStrategy LockingStrategy
-        {
-            get;
-            set;
-        }
-        /// <summary>
-        /// get current generation
-        /// </summary>
-        /// <returns></returns>
+
         public long GetGeneration()
         {
-            using (LockingStrategy.ReadLock())
+            try
             {
-                return _namespaceGeneration;
+                locker.EnterReadLock();
+                return generation;
+            }
+            finally
+            {
+                locker.ExitReadLock();
             }
         }
-        /// <summary>
-        /// set new generation
-        /// </summary>
-        /// <param name="generation"></param>
-        public void SetGeneration(long generation)
-        {
-            if (generation < 0) return;
 
-            using (LockingStrategy.WriteLock())
+        public void SetGeneration(long newGeneration)
+        {
+            if (newGeneration < 0) return;
+
+            try
             {
-                if (_namespaceGeneration == -1 || generation > _namespaceGeneration)
-                    _namespaceGeneration = generation;
+                locker.EnterWriteLock();
+
+                if (generation == -1 || newGeneration > generation)
+                {
+                    generation = newGeneration;
+                }
+            }
+            finally
+            {
+                locker.ExitWriteLock();
             }
         }
-        /// <summary>
-        /// redis key for generation
-        /// </summary>
-        /// <returns></returns>
+
+        public string GetSetOfKeysKey()
+        {
+            return setOfKeysKey;
+        }
+
         public string GetGenerationKey()
         {
-            return _namespaceGenerationKey;
+            return generationKey;
         }
 
-        /// <summary>
-        /// get redis key that holds all namespace keys
-        /// </summary>
-        /// <returns></returns>
-        public string GetGlobalKeysKey()
+        public string GetKey(object key)
         {
-            return _globalKeysKey;
-        }
-        /// <summary>
-        /// get global cache key
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public string GlobalCacheKey(object key)
-        {
-            return GlobalKey(key, NumTagsForKey);
+            return prefix + ":v" + generation + ":" + key;
         }
 
-        public string GlobalLockKey(object key)
+        public string GetLockKey(object key)
         {
-            return GlobalKey(key, NumTagsForLockKey) + "LOCK";
+            return GetKey(key) + ":lock";
         }
 
-        /// <summary>
-        /// get global key inside of this namespace
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="numUniquePrefixes">prefixes can be added for name deconfliction</param>
-        /// <returns></returns>
-        public string GlobalKey(object key, int numUniquePrefixes)
+        public void Dispose()
         {
-            var rc = Sanitize(key);
-            if (_namespacePrefix != null && !_namespacePrefix.Equals(""))
-                rc = _namespacePrefix + "_" + GetGeneration() + NamespaceKeySeparator + rc;
-            for (var i = 0; i < numUniquePrefixes; ++i)
-                rc += KeyTag;
-            return rc;
-        }
-        /// <summary>
-        /// replace UniqueCharacter with its double, to avoid name clash
-        /// </summary>
-        /// <param name="dirtyString"></param>
-        /// <returns></returns>
-        private static string Sanitize(string dirtyString)
-        {
-            return dirtyString == null ? null : dirtyString.Replace(UniqueCharacter, Sanitizer);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="dirtyString"></param>
-        /// <returns></returns>
-        private static string Sanitize(object dirtyString)
-        {
-            return Sanitize(dirtyString.ToString());
+            locker.Dispose();
         }
     }
 }

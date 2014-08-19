@@ -44,7 +44,7 @@ namespace NHibernate.Caches.Redis.Tests
             // Act
             cache.Put(999, new Person("Foo", 10));
             // Assert
-            var cacheKey = cache.CacheNamespace.GlobalCacheKey(999);
+            var cacheKey = cache.CacheNamespace.GetKey(999);
             var data = Redis.StringGet(cacheKey);
             var expiry = Redis.KeyTimeToLive(cacheKey);
 
@@ -68,7 +68,7 @@ namespace NHibernate.Caches.Redis.Tests
             cache.Put(999, new Person("Foo", 10));
 
             // Assert
-            var cacheKey = cache.CacheNamespace.GlobalCacheKey(999);
+            var cacheKey = cache.CacheNamespace.GetKey(999);
             var expiry = Redis.KeyTimeToLive(cacheKey);
             Assert.True(expiry >= TimeSpan.FromMinutes(98) && expiry <= TimeSpan.FromMinutes(99));
         }
@@ -87,7 +87,7 @@ namespace NHibernate.Caches.Redis.Tests
 
             // Assert
             Assert.Equal(cache.CacheNamespace.GetGeneration(), 101);
-            var data = Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(999));
+            var data = Redis.StringGet(cache.CacheNamespace.GetKey(999));
             var person = (Person)options.Serializer.Deserialize(data);
             Assert.Equal("Foo", person.Name);
             Assert.Equal(10, person.Age);
@@ -171,7 +171,7 @@ namespace NHibernate.Caches.Redis.Tests
             cache.Remove(999);
 
             // Assert
-            var result = Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(999));
+            var result = Redis.StringGet(cache.CacheNamespace.GetKey(999));
             Assert.False(result.HasValue);
         }
 
@@ -191,7 +191,7 @@ namespace NHibernate.Caches.Redis.Tests
 
             // Assert
             Assert.Equal(101, cache1.CacheNamespace.GetGeneration());
-            var result = Redis.StringGet(cache1.CacheNamespace.GlobalCacheKey(999));
+            var result = Redis.StringGet(cache1.CacheNamespace.GetKey(999));
             Assert.False(result.HasValue);
         }
 
@@ -203,11 +203,11 @@ namespace NHibernate.Caches.Redis.Tests
             cache.Put(1, new Person("Foo", 1));
             cache.Put(2, new Person("Bar", 2));
             cache.Put(3, new Person("Baz", 3));
-            var oldKey1 = cache.CacheNamespace.GlobalCacheKey(1);
-            var oldKey2 = cache.CacheNamespace.GlobalCacheKey(2);
-            var oldKey3 = cache.CacheNamespace.GlobalCacheKey(3);
+            var oldKey1 = cache.CacheNamespace.GetKey(1);
+            var oldKey2 = cache.CacheNamespace.GetKey(2);
+            var oldKey3 = cache.CacheNamespace.GetKey(3);
 
-            var globalKeysKey = cache.CacheNamespace.GetGlobalKeysKey();
+            var setOfKeysKey = cache.CacheNamespace.GetSetOfKeysKey();
 
             // Act
             cache.Clear();
@@ -216,12 +216,12 @@ namespace NHibernate.Caches.Redis.Tests
             
             // New generation.
             Assert.Equal(2, cache.CacheNamespace.GetGeneration());
-            Assert.False(Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(1)).HasValue);
-            Assert.False(Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(2)).HasValue);
-            Assert.False(Redis.StringGet(cache.CacheNamespace.GlobalCacheKey(3)).HasValue);
+            Assert.False(Redis.StringGet(cache.CacheNamespace.GetKey(1)).HasValue);
+            Assert.False(Redis.StringGet(cache.CacheNamespace.GetKey(2)).HasValue);
+            Assert.False(Redis.StringGet(cache.CacheNamespace.GetKey(3)).HasValue);
             
             // List of keys for this region was cleared.
-            Assert.False(Redis.StringGet(globalKeysKey).HasValue);
+            Assert.False(Redis.StringGet(setOfKeysKey).HasValue);
 
             // The old values will expire automatically.
             var ttl1 = Redis.KeyTimeToLive(oldKey1);

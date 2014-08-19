@@ -127,11 +127,11 @@ namespace NHibernate.Caches.Redis
 
                 ExecuteEnsureGeneration(transaction =>
                 {
-                    var cacheKey = CacheNamespace.GlobalCacheKey(key);
+                    var cacheKey = CacheNamespace.GetKey(key);
                     transaction.StringSetAsync(cacheKey, data, expiry);
 
-                    var globalKeysKey = CacheNamespace.GetGlobalKeysKey();
-                    transaction.SetAddAsync(globalKeysKey, cacheKey);
+                    var setOfKeysKey = CacheNamespace.GetSetOfKeysKey();
+                    transaction.SetAddAsync(setOfKeysKey, cacheKey);
                 });
             }
             catch (Exception e)
@@ -156,7 +156,7 @@ namespace NHibernate.Caches.Redis
 
                 ExecuteEnsureGeneration(transaction =>
                 {
-                    var cacheKey = CacheNamespace.GlobalCacheKey(key);
+                    var cacheKey = CacheNamespace.GetKey(key);
                     dataResult = transaction.StringGetAsync(cacheKey);
                 });
 
@@ -187,7 +187,7 @@ namespace NHibernate.Caches.Redis
             {
                 ExecuteEnsureGeneration(transaction =>
                 {
-                    var cacheKey = CacheNamespace.GlobalCacheKey(key);
+                    var cacheKey = CacheNamespace.GetKey(key);
                     transaction.KeyDeleteAsync(cacheKey, CommandFlags.FireAndForget);
                 });
             }
@@ -204,7 +204,7 @@ namespace NHibernate.Caches.Redis
         public virtual void Clear()
         {
             var generationKey = CacheNamespace.GetGenerationKey();
-            var globalKeysKey = CacheNamespace.GetGlobalKeysKey();
+            var setOfKeysKey = CacheNamespace.GetSetOfKeysKey();
 
             log.DebugFormat("clear cache : {0}", generationKey);
 
@@ -215,7 +215,7 @@ namespace NHibernate.Caches.Redis
 
                 var generationIncrement = transaction.StringIncrementAsync(generationKey);
 
-                transaction.KeyDeleteAsync(globalKeysKey, CommandFlags.FireAndForget);
+                transaction.KeyDeleteAsync(setOfKeysKey, CommandFlags.FireAndForget);
 
                 transaction.Execute();
 
@@ -243,7 +243,7 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var globalKey = CacheNamespace.GlobalKey(key, RedisNamespace.NumTagsForLockKey);
+                var globalKey = CacheNamespace.GetLockKey(key);
 
                 var db = connectionMultiplexer.GetDatabase();
 
@@ -304,7 +304,8 @@ namespace NHibernate.Caches.Redis
 
             while (!executed)
             {
-                var generation = db.StringGet(CacheNamespace.GetGenerationKey());
+                var generationKey = CacheNamespace.GetGenerationKey();
+                var generation = db.StringGet(generationKey);
                 var serverGeneration = Convert.ToInt64(generation);
 
                 CacheNamespace.SetGeneration(serverGeneration);

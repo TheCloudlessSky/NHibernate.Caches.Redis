@@ -83,9 +83,6 @@
     <Compile Include="..\NHibernate.Caches.Redis\ExecExtensions.cs">
       <Link>ExecExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ILockingStrategy.cs">
-      <Link>ILockingStrategy.cs</Link>
-    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\IRedisCacheSerializer.cs">
       <Link>IRedisCacheSerializer.cs</Link>
     </Compile>
@@ -97,12 +94,6 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ReaderWriterLockingStrategy.cs">
-      <Link>ReaderWriterLockingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ReadLock.cs">
-      <Link>ReadLock.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCache.cs">
       <Link>RedisCache.cs</Link>
@@ -127,9 +118,6 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisNamespace.cs">
       <Link>RedisNamespace.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\WriteLock.cs">
-      <Link>WriteLock.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\XmlRedisCacheSerializerBase.cs">
       <Link>XmlRedisCacheSerializerBase.cs</Link>
