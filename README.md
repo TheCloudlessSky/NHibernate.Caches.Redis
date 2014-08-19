@@ -143,7 +143,6 @@ public class RequestRecoveryRedisCacheProvider : RedisCacheProvider
         return new RequestRecoveryRedisCache(regionName, properties, configElement, connectionMultiplexer, options);
     }
 }
-
 ```
 Then, use `RequestRecoveryRedisCacheProvider` in your `web.config` settings.
 
