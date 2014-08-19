@@ -21,6 +21,11 @@ namespace NHibernate.Caches.Redis
                 new RedisCacheProviderSection();
         }
 
+        /// <summary>
+        /// Set the <see cref="StackExchange.Redis.ConnectionMultiplexer"/> to be used to
+        /// connect to Redis.
+        /// </summary>
+        /// <param name="connectionMultiplexer"></param>
         public static void SetConnectionMultiplexer(ConnectionMultiplexer connectionMultiplexer)
         {
             lock (syncRoot)
@@ -34,6 +39,10 @@ namespace NHibernate.Caches.Redis
             }
         }
 
+        /// <summary>
+        /// Set the options to be used to configure each cache.
+        /// </summary>
+        /// <param name="options"></param>
         public static void SetOptions(RedisCacheProviderOptions options)
         {
             lock (syncRoot)

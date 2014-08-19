@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>NHibernate.Caches.Redis</id>
+    <version>2.0.0-alpha1</version>
+    <authors>Adrian Phinney</authors>
+    <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>http://github.com/TheCloudlessSky/NHibernate.Caches.Redis</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>An NHibernate caching provider for Redis.</description>
+    <!--<releaseNotes></releaseNotes>-->
+    <copyright>Copyright Harbour Inc. 2014</copyright>
+    <tags>redis caching nhibernate cache provider</tags>
+    <dependencies>
+      <dependency id="StackExchange.Redis" version="[1.0.322,)" />
+      <dependency id="NHibernate" version="[3.3,)" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="src\NHibernate.Caches.Redis.Net40\bin\Release\NHibernate.Caches.Redis.dll" target="lib\net40" />
+    <file src="src\NHibernate.Caches.Redis.Net40\bin\Release\NHibernate.Caches.Redis.pdb" target="lib\net40" />
+    <file src="src\NHibernate.Caches.Redis.Net40\bin\Release\NHibernate.Caches.Redis.xml" target="lib\net40" />
+    <file src="src\NHibernate.Caches.Redis\bin\Release\NHibernate.Caches.Redis.dll" target="lib\net45" />
+    <file src="src\NHibernate.Caches.Redis\bin\Release\NHibernate.Caches.Redis.pdb" target="lib\net45" />
+    <file src="src\NHibernate.Caches.Redis\bin\Release\NHibernate.Caches.Redis.xml" target="lib\net45" />
+  </files>
+</package>
