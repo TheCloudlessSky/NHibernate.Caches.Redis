@@ -2,7 +2,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.5" DefaultTargets="Go">
     
     <PropertyGroup>
-        <Configuration Condition="'$(Configuration)'==''">Release</Configuration>
         <RootDirectory>$(MSBuildProjectDirectory)\..</RootDirectory>
         <BuildRoot>$(RootDirectory)\build</BuildRoot>
         <SourceRoot>$(RootDirectory)\src</SourceRoot>
@@ -10,8 +9,6 @@
         <BinRoot>$(RootDirectory)\bin</BinRoot>
         <PackagesRoot>$(RootDirectory)\packages</PackagesRoot>
         <TestsRoot>$(RootDirectory)\tests</TestsRoot>
-        
-        <OutputDirectory>$(SourceRoot)\NHibernate.Caches.Redis\bin\$(Configuration)</OutputDirectory>
         
         <MSBuildExtensionPackLib>$(ToolsRoot)\MSBuild.ExtensionPack\MSBuild.ExtensionPack.dll</MSBuildExtensionPackLib>
         <XUnitLib>$(PackagesRoot)\xunit.1.9.2\lib\net20\xunit.runner.msbuild.dll</XUnitLib>
@@ -26,7 +23,7 @@
     
     <Target Name="Build">
         <!-- NOTE: 1591 is warning for no XML docs -->
-        <MSBuild Projects="$(RootDirectory)\NHibernate.Caches.Redis.sln" Properties="Configuration=$(Configuration);NoWarn=1591" />
+        <MSBuild Projects="$(RootDirectory)\NHibernate.Caches.Redis.sln" Properties="Configuration=Release;NoWarn=1591" />
     </Target>
     
     <Target Name="RunTests" Condition="'$(SkipTests)'==''" DependsOnTargets="_StartRedis;_ExecTests;_StopRedis">
