@@ -32,7 +32,7 @@
     
     <Target Name="_ExecTests">
         <ItemGroup>
-            <TestItems Include="$(TestsRoot)\NHibernate.Caches.Redis.Tests\bin\$(Configuration)\NHibernate.Caches.Redis.Tests.dll" />
+            <TestItems Include="$(TestsRoot)\NHibernate.Caches.Redis.Tests\bin\Release\NHibernate.Caches.Redis.Tests.dll" />
         </ItemGroup>
     
         <xunit Assembly="@(TestItems)" />
