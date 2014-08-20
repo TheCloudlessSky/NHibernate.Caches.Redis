@@ -155,7 +155,7 @@ ServiceStack.Redis. This obviously causes a few breaking changes with the
 constructors.
 - Introduce `RedisCacheProvider.SetOptions` so that you don't need to subclass
 to override `OnException`.
-- Allow the serializer to be customized by implementing `IRedisCacheSerializer`
+- Allow the serializer to be customized by implementing `ICacheSerializer`
 and setting the `Serializer` on the options. The default serializer uses the
 `NetDataContractSerializer`.
 

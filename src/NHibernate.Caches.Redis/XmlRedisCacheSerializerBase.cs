@@ -4,7 +4,7 @@ using StackExchange.Redis;
 
 namespace NHibernate.Caches.Redis
 {
-    public abstract class XmlRedisCacheSerializerBase : IRedisCacheSerializer
+    public abstract class XmlRedisCacheSerializerBase : ICacheSerializer
     {
         public XmlRedisCacheSerializerBase()
         {

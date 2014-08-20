@@ -13,7 +13,7 @@ namespace NHibernate.Caches.Redis
         // TODO: IGeneration
         // TODO: Region cache namespaces
 
-        public IRedisCacheSerializer Serializer { get; set; }
+        public ICacheSerializer Serializer { get; set; }
         public Action<RedisCacheExceptionEventArgs> OnException { get; set; }
 
         public RedisCacheProviderOptions()
