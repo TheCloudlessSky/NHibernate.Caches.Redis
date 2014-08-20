@@ -44,7 +44,7 @@ namespace NHibernate.Caches.Redis.Sample
             RedisCacheProvider.SetConnectionMultiplexer(connectionMultiplexer);
             RedisCacheProvider.SetOptions(new RedisCacheProviderOptions()
             {
-                Serializer = new NetDataContractRedisCacheSerializer()
+                Serializer = new NetDataContractCacheSerializer()
             });
 
             var dbFile = HttpContext.Current.Server.MapPath("~/App_Data/sample.db");

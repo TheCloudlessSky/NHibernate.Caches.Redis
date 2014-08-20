@@ -65,7 +65,7 @@
     <Compile Include="DateTimeExtensions.cs" />
     <Compile Include="ExecExtensions.cs" />
     <Compile Include="ICacheSerializer.cs" />
-    <Compile Include="NetDataContractRedisCacheSerializer.cs" />
+    <Compile Include="NetDataContractCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

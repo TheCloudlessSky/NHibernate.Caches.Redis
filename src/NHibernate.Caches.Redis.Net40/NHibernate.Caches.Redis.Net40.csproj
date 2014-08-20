@@ -89,8 +89,8 @@
     <Compile Include="..\NHibernate.Caches.Redis\ICacheSerializer.cs">
       <Link>ICacheSerializer.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\NetDataContractRedisCacheSerializer.cs">
-      <Link>NetDataContractRedisCacheSerializer.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\NetDataContractCacheSerializer.cs">
+      <Link>NetDataContractCacheSerializer.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ObjectExtensions.cs">
       <Link>ObjectExtensions.cs</Link>

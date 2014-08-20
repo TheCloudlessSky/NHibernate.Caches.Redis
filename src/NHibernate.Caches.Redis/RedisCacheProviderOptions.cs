@@ -18,7 +18,7 @@ namespace NHibernate.Caches.Redis
 
         public RedisCacheProviderOptions()
         {
-            Serializer = new NetDataContractRedisCacheSerializer();
+            Serializer = new NetDataContractCacheSerializer();
         }
 
         // Copy constructor.
