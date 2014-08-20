@@ -163,7 +163,6 @@ namespace NHibernate.Caches.Redis
                 var data = dataResult.Result;
 
                 return Deserialize(data);
-
             }
             catch (Exception e)
             {
