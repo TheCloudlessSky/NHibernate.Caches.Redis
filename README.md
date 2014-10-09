@@ -158,6 +158,10 @@ to override `OnException`.
 - Allow the serializer to be customized by implementing `ICacheSerializer`
 and setting the `Serializer` on the options. The default serializer uses the
 `NetDataContractSerializer`.
+- The cache key no longer duplicates the region prefix. In previous
+versions, caching an object with the type `MyApp.Models.Blog` and a region
+prefix of `v2` would use the key `v2:NHibernate-Cache:v2.ProcedureFlow.Core.Models.User:keys`.
+The key is now `v2:NHibernate-Cache:ProcedureFlow.Core.Models.User:keys`.
 
 
 **1.3.0**

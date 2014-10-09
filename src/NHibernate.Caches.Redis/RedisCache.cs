@@ -56,16 +56,9 @@ namespace NHibernate.Caches.Redis
 
             log.DebugFormat("using expiration : {0} seconds", expiry.TotalSeconds);
 
-            var regionPrefix = PropertiesHelper.GetString(Cfg.Environment.CacheRegionPrefix, properties, null);
-            log.DebugFormat("using region prefix : {0}", regionPrefix);
+            var @namespace = CacheNamePrefix + RegionName;
 
-            var namespacePrefix = CacheNamePrefix + RegionName;
-            if (!String.IsNullOrWhiteSpace(regionPrefix))
-            {
-                namespacePrefix = regionPrefix + ":" + namespacePrefix;
-            }
-
-            CacheNamespace = new RedisNamespace(namespacePrefix);
+            CacheNamespace = new RedisNamespace(@namespace);
             SyncGeneration();
         }
 
