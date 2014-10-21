@@ -15,10 +15,12 @@ namespace NHibernate.Caches.Redis
 
         public ICacheSerializer Serializer { get; set; }
         public Action<RedisCacheExceptionEventArgs> OnException { get; set; }
+        public int Database { get; set; }
 
         public RedisCacheProviderOptions()
         {
             Serializer = new NetDataContractCacheSerializer();
+            Database = 0;
         }
 
         // Copy constructor.
@@ -26,6 +28,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = options.Serializer;
             OnException = options.OnException;
+            Database = options.Database;
         }
 
         internal RedisCacheProviderOptions Clone()

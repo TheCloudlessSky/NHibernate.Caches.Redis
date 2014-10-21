@@ -89,7 +89,7 @@ namespace NHibernate.Caches.Redis
 
         private long FetchGeneration()
         {
-            var db = connectionMultiplexer.GetDatabase();
+            var db = GetDatabase();
 
             var generationKey = CacheNamespace.GetGenerationKey();
             var attemptedGeneration = db.StringGet(generationKey);
@@ -202,7 +202,7 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var db = connectionMultiplexer.GetDatabase();
+                var db = GetDatabase();
                 var transaction = db.CreateTransaction();
 
                 var generationIncrement = transaction.StringIncrementAsync(generationKey);
@@ -237,7 +237,7 @@ namespace NHibernate.Caches.Redis
             {
                 var globalKey = CacheNamespace.GetLockKey(key);
 
-                var db = connectionMultiplexer.GetDatabase();
+                var db = GetDatabase();
 
                 ExecExtensions.RetryUntilTrue(() =>
                 {
@@ -274,7 +274,7 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var db = connectionMultiplexer.GetDatabase();
+                var db = GetDatabase();
 
                 db.KeyDelete(globalKey);
             }
@@ -290,7 +290,7 @@ namespace NHibernate.Caches.Redis
 
         private void ExecuteEnsureGeneration(Action<StackExchange.Redis.ITransaction> action)
         {
-            var db = connectionMultiplexer.GetDatabase();
+            var db = GetDatabase();
 
             var executed = false;
 
@@ -338,6 +338,11 @@ namespace NHibernate.Caches.Redis
                 throw new InvalidOperationException("A serializer was not configured on the RedisCacheProviderOptions.");
             }
             return options.Serializer.Deserialize(value);
+        }
+
+        private IDatabase GetDatabase()
+        {
+            return connectionMultiplexer.GetDatabase(options.Database);
         }
 
         private void OnException(RedisCacheExceptionEventArgs e)

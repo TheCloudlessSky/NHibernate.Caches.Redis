@@ -153,11 +153,13 @@ Changelog
 - Switch the Redis library to [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) because of licensing changes with
 ServiceStack.Redis. This obviously causes a few breaking changes with the
 constructors.
-- Introduce `RedisCacheProvider.SetOptions` so that you don't need to subclass
-to override `OnException`.
+- Introduce `RedisCacheProvider.SetOptions` (so that, for example, you don't 
+need to subclass to override `OnException`).
 - Allow the serializer to be customized by implementing `ICacheSerializer`
 and setting the `Serializer` on the options. The default serializer uses the
 `NetDataContractSerializer`.
+- Customize which database the Redis connection uses with the `Database`
+option
 - The cache key no longer duplicates the region prefix. In previous
 versions, caching an object with the type `MyApp.Models.Blog` and a region
 prefix of `v2` would use the key `v2:NHibernate-Cache:v2.ProcedureFlow.Core.Models.User:keys`.
