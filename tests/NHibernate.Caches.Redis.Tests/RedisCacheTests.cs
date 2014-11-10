@@ -309,52 +309,6 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Put_and_Get_should_silently_continue_if_SocketException()
-        {
-            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidConnectionString))
-            {
-                const int key = 1;
-                var sut = new RedisCache("region_A", invalidConnectionMultiplexer, options);
-
-                sut.Put(key, new Person("A", 1));
-
-                Assert.Null(sut.Get(key));
-            }
-        }
-
-        [Fact]
-        void Lock_and_Unlock_should_silently_continue_if_SocketException()
-        {
-            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidConnectionString))
-            {
-                const int key = 1;
-                var sut = new RedisCache("region_A", invalidConnectionMultiplexer, options);
-
-                Assert.DoesNotThrow(() =>
-                {
-                    sut.Put(key, new Person("A", 1));
-                    sut.Lock(key);
-                    sut.Unlock(key);
-                });
-            }
-        }
-
-        [Fact]
-        void Remove_should_silently_continue_if_SocketException()
-        {
-            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidConnectionString))
-            {
-                const int key = 1;
-                var sut = new RedisCache("region_A", invalidConnectionMultiplexer, options);
-
-                Assert.DoesNotThrow(() =>
-                {
-                    sut.Remove(key);
-                });
-            }
-        }
-
-        [Fact]
         void Should_update_server_generation_when_server_has_less_generation_than_the_client()
         {
             const int key = 1;

@@ -383,12 +383,7 @@ namespace NHibernate.Caches.Redis
         {
             if (options.OnException == null)
             {
-                var isSocketException = e.Exception is RedisConnectionException || e.Exception is SocketException || e.Exception.InnerException is SocketException;
-
-                if (!isSocketException)
-                {
-                    e.Throw = true;
-                }
+                e.Throw = true;
             }
             else
             {
