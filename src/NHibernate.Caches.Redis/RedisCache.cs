@@ -262,7 +262,7 @@ namespace NHibernate.Caches.Redis
                     var lockData = new LockData(
                         key: Convert.ToString(key),
                         lockKey: lockKey,
-                        lockValue: "lock-" + DateTime.UtcNow.Ticks
+                        lockValue: "lock-" + Guid.NewGuid()
                     );
 
                     var db = GetDatabase();
