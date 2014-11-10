@@ -6,6 +6,7 @@ using NHibernate.Cache;
 using NHibernate.Util;
 using System.Net.Sockets;
 using StackExchange.Redis;
+using System.Runtime.Caching;
 
 namespace NHibernate.Caches.Redis
 {
@@ -17,7 +18,7 @@ namespace NHibernate.Caches.Redis
 
         // The acquired locks do not need to be distributed into Redis because
         // the same ISession will lock/unlock an object.
-        private readonly Dictionary<object, string> acquiredLocks = new Dictionary<object, string>();
+        private readonly MemoryCache acquiredLocks = new MemoryCache("NHibernate.Caches.Redis.RedisCache");
 
         private readonly ConnectionMultiplexer connectionMultiplexer;
         private readonly RedisCacheProviderOptions options;
@@ -29,6 +30,25 @@ namespace NHibernate.Caches.Redis
         public string RegionName { get; private set; }
         internal RedisNamespace CacheNamespace { get; private set; }
         public int Timeout { get { return Timestamper.OneMs * 60000; } }
+
+        private class LockData
+        {
+            public string Key { get; private set; }
+            public string LockKey { get; private set; }
+            public string LockValue { get; private set; }
+
+            public LockData(string key, string lockKey, string lockValue)
+            {
+                this.Key = key;
+                this.LockKey = lockKey;
+                this.LockValue = lockValue;
+            }
+
+            public override string ToString()
+            {
+                return "{ Key='" + Key + "', LockKey='" + LockKey + "', LockValue='" + LockValue + "' }";
+            }
+        }
 
         public RedisCache(string regionName, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
             : this(regionName, new Dictionary<string, string>(), null, connectionMultiplexer, options)
@@ -235,25 +255,32 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                var globalKey = CacheNamespace.GetLockKey(key);
-
-                var db = GetDatabase();
+                var lockKey = CacheNamespace.GetLockKey(key);
 
                 ExecExtensions.RetryUntilTrue(() =>
                 {
-                    var wasSet = db.StringSet(globalKey, "lock " + DateTime.UtcNow.ToUnixTime(), when: When.NotExists);
+                    var lockData = new LockData(
+                        key: Convert.ToString(key),
+                        lockKey: lockKey,
+                        lockValue: "lock-" + DateTime.UtcNow.ToUnixTime()
+                    );
 
-                    if (wasSet)
+                    var db = GetDatabase();
+                    var wasLockTaken = db.LockTake(lockData.LockKey, lockData.LockValue, lockTimeout);
+
+                    if (wasLockTaken)
                     {
-                        acquiredLocks[key] = globalKey;
+                        // It's ok to use Set() instead of Add() because we know
+                        // that only one thread will access the MemoryCache (per-ISession).
+                        acquiredLocks.Set(lockData.Key, lockData, absoluteExpiration: DateTime.UtcNow.Add(lockTimeout));
                     }
 
-                    return wasSet;
+                    return wasLockTaken;
                 }, lockTimeout);
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not acquire cache lock : ", key);
+                log.ErrorFormat("could not acquire cache lock : {0}", key);
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
@@ -263,24 +290,31 @@ namespace NHibernate.Caches.Redis
 
         public virtual void Unlock(object key)
         {
-            string globalKey;
-            if (!acquiredLocks.TryGetValue(key, out globalKey))
+            // Use Remove() instead of Get() because we are releasing the lock
+            // anyways.
+            var lockData = acquiredLocks.Remove(Convert.ToString(key)) as LockData;
+            if (lockData == null)
             {
                 log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired");
                 return;
             }
 
-            log.DebugFormat("releasing cache lock : {0}", key);
+            log.DebugFormat("releasing cache lock : {0}", lockData);
 
             try
             {
                 var db = GetDatabase();
 
-                db.KeyDelete(globalKey);
+                var wasLockReleased = db.LockRelease(lockData.LockKey, lockData.LockValue);
+
+                if (!wasLockReleased)
+                {
+                    log.WarnFormat("attempted to unlock '{0}' but it could not be relased (maybe was cleared from Redis)", lockData); 
+                }
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not release cache lock : {0}", key);
+                log.ErrorFormat("could not release cache lock : {0}", lockData);
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);

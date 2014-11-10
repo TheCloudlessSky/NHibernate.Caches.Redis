@@ -240,14 +240,15 @@ namespace NHibernate.Caches.Redis.Tests
                 int clientNumber = i;
                 var t = Task.Factory.StartNew(() =>
                 {
-                    sut.Lock(1);
+                    var key = "1";
+                    sut.Lock(key);
                     results.Enqueue(clientNumber + " lock");
 
                     // Atrifical concurrency.
                     Thread.Sleep(100);
 
                     results.Enqueue(clientNumber + " unlock");
-                    sut.Unlock(1);
+                    sut.Unlock(key);
                 });
 
                 tasks.Add(t);
@@ -281,14 +282,15 @@ namespace NHibernate.Caches.Redis.Tests
                 var t = Task.Factory.StartNew(() =>
                 {
                     var cacheX = new RedisCache("region", ConnectionMultiplexer, options);
-                    cacheX.Lock(1);
+                    var key = "1";
+                    cacheX.Lock(key);
                     results.Enqueue(clientNumber + " lock");
 
                     // Atrifical concurrency.
                     Thread.Sleep(100);
 
                     results.Enqueue(clientNumber + " unlock");
-                    cacheX.Unlock(1);
+                    cacheX.Unlock(key);
                 });
 
                 tasks.Add(t);

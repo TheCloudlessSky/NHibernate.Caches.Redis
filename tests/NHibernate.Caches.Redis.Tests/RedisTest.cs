@@ -5,7 +5,7 @@ namespace NHibernate.Caches.Redis.Tests
 {
     public class RedisTest : IDisposable
     {
-        protected const string ValidHost = "localhost:6379,allowAdmin=true,abortConnect=false";
+        private const string connectionString = "localhost:6379,allowAdmin=true,abortConnect=false,syncTimeout=5000";
         protected const string InvalidHost = "unknown-host:6666,abortConnect=false";
 
         protected ConnectionMultiplexer ConnectionMultiplexer { get; private set; }
@@ -13,7 +13,7 @@ namespace NHibernate.Caches.Redis.Tests
         
         protected RedisTest()
         {
-            ConnectionMultiplexer = ConnectionMultiplexer.Connect(ValidHost);
+            ConnectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
             Redis = ConnectionMultiplexer.GetDatabase();
             FlushDb();
         }
