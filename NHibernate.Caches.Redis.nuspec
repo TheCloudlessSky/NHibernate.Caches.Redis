@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>NHibernate.Caches.Redis</id>
-    <version>2.0.0-alpha6</version>
+    <version>2.0.0-alpha7</version>
     <authors>Adrian Phinney</authors>
     <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
     <projectUrl>http://github.com/TheCloudlessSky/NHibernate.Caches.Redis</projectUrl>
