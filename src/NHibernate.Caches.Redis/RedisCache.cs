@@ -262,7 +262,7 @@ namespace NHibernate.Caches.Redis
                     var lockData = new LockData(
                         key: Convert.ToString(key),
                         lockKey: lockKey,
-                        lockValue: "lock-" + DateTime.UtcNow.ToUnixTime()
+                        lockValue: "lock-" + DateTime.UtcNow.Ticks
                     );
 
                     var db = GetDatabase();
@@ -295,7 +295,7 @@ namespace NHibernate.Caches.Redis
             var lockData = acquiredLocks.Remove(Convert.ToString(key)) as LockData;
             if (lockData == null)
             {
-                log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired");
+                log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired", key);
                 return;
             }
 
