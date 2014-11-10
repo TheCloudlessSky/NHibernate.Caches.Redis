@@ -59,7 +59,7 @@ namespace NHibernate.Caches.Redis
         public RedisCache(string regionName, IDictionary<string, string> properties, RedisCacheElement element, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
             this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
-            this.options = options.ThrowIfNull("options").Clone();
+            this.options = options.ThrowIfNull("options").ShallowCloneAndValidate();
 
             RegionName = regionName.ThrowIfNull("regionName");
 
@@ -262,7 +262,7 @@ namespace NHibernate.Caches.Redis
                     var lockData = new LockData(
                         key: Convert.ToString(key),
                         lockKey: lockKey,
-                        lockValue: "lock-" + Guid.NewGuid()
+                        lockValue: GetLockValue()
                     );
 
                     var db = GetDatabase();
@@ -356,21 +356,18 @@ namespace NHibernate.Caches.Redis
             }
         }
 
+        private string GetLockValue()
+        {
+            return options.LockValueFactory();
+        }
+
         private RedisValue Serialize(object value)
         {
-            if (options.Serializer == null)
-            {
-                throw new InvalidOperationException("A serializer was not configured on the RedisCacheProviderOptions.");
-            }
             return options.Serializer.Serialize(value);
         }
 
         private object Deserialize(RedisValue value)
         {
-            if (options.Serializer == null)
-            {
-                throw new InvalidOperationException("A serializer was not configured on the RedisCacheProviderOptions.");
-            }
             return options.Serializer.Deserialize(value);
         }
 
@@ -381,14 +378,7 @@ namespace NHibernate.Caches.Redis
 
         private void OnException(RedisCacheExceptionEventArgs e)
         {
-            if (options.OnException == null)
-            {
-                e.Throw = true;
-            }
-            else
-            {
-                options.OnException(e);
-            }
+            options.OnException(e);
         }
     }
 }
