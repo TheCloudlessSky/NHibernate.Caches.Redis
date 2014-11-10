@@ -244,7 +244,7 @@ namespace NHibernate.Caches.Redis.Tests
                     sut.Lock(key);
                     results.Enqueue(clientNumber + " lock");
 
-                    // Atrifical concurrency.
+                    // Artificial concurrency.
                     Thread.Sleep(100);
 
                     results.Enqueue(clientNumber + " unlock");
@@ -286,7 +286,7 @@ namespace NHibernate.Caches.Redis.Tests
                     cacheX.Lock(key);
                     results.Enqueue(clientNumber + " lock");
 
-                    // Atrifical concurrency.
+                    // Artificial concurrency.
                     Thread.Sleep(100);
 
                     results.Enqueue(clientNumber + " unlock");
@@ -311,7 +311,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Put_and_Get_should_silently_continue_if_SocketException()
         {
-            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidHost))
+            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidConnectionString))
             {
                 const int key = 1;
                 var sut = new RedisCache("region_A", invalidConnectionMultiplexer, options);
@@ -325,7 +325,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Lock_and_Unlock_should_silently_continue_if_SocketException()
         {
-            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidHost))
+            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidConnectionString))
             {
                 const int key = 1;
                 var sut = new RedisCache("region_A", invalidConnectionMultiplexer, options);
@@ -342,7 +342,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Remove_should_silently_continue_if_SocketException()
         {
-            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidHost))
+            using (var invalidConnectionMultiplexer = ConnectionMultiplexer.Connect(InvalidConnectionString))
             {
                 const int key = 1;
                 var sut = new RedisCache("region_A", invalidConnectionMultiplexer, options);

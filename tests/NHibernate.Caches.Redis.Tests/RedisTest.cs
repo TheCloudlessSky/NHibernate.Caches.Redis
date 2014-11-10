@@ -6,7 +6,7 @@ namespace NHibernate.Caches.Redis.Tests
     public class RedisTest : IDisposable
     {
         private const string connectionString = "localhost:6379,allowAdmin=true,abortConnect=false,syncTimeout=5000";
-        protected const string InvalidHost = "unknown-host:6666,abortConnect=false";
+        protected const string InvalidConnectionString = "unknown-host:6666,abortConnect=false,connectTimeout=500";
 
         protected ConnectionMultiplexer ConnectionMultiplexer { get; private set; }
         protected IDatabase Redis { get; private set; }
