@@ -61,6 +61,9 @@ expiration for a specific class that you cache.
 </nhibernateRedisCache>
 ```
 
+You can customize things like the `ICacheSerializer` used to serialize objects
+to Redis. For example, [here is a JSON.NET implementation](https://gist.github.com/TheCloudlessSky/f60d47ad2ca4dea72583).
+
 Exception Handling
 ------------------
 
