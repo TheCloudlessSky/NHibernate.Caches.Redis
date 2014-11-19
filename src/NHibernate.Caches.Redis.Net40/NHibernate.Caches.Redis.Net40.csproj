@@ -82,6 +82,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\CommonAssemblyInfo.cs">
+      <Link>Properties\CommonAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ExecExtensions.cs">
       <Link>ExecExtensions.cs</Link>
     </Compile>
