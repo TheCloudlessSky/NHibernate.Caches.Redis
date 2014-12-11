@@ -3,7 +3,7 @@ using StackExchange.Redis;
 
 namespace NHibernate.Caches.Redis.Tests
 {
-    public class RedisTest : IDisposable
+    public abstract class RedisTest : IDisposable
     {
         private const int testDb = 15;
         private const string testHost = "localhost";
@@ -21,6 +21,14 @@ namespace NHibernate.Caches.Redis.Tests
             ConnectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
             Redis = GetDatabase();
             FlushDb();
+        }
+
+        protected RedisCacheProviderOptions CreateTestProviderOptions()
+        {
+            return new RedisCacheProviderOptions()
+            {
+                Database = testDb
+            };
         }
 
         protected IDatabase GetDatabase()

@@ -26,6 +26,7 @@ namespace NHibernate.Caches.Redis.Tests
         public IntegrationTestBase()
         {
             RedisCacheProvider.InternalSetConnectionMultiplexer(ConnectionMultiplexer);
+            RedisCacheProvider.InternalSetOptions(CreateTestProviderOptions());
 
             InitializeDatabasePaths();
 

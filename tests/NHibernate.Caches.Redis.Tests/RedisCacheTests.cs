@@ -12,7 +12,12 @@ namespace NHibernate.Caches.Redis.Tests
 {
     public class RedisCacheTests : RedisTest
     {
-        private readonly RedisCacheProviderOptions options = new RedisCacheProviderOptions();
+        private readonly RedisCacheProviderOptions options;
+
+        public RedisCacheTests()
+        {
+            options = CreateTestProviderOptions();
+        }
 
         [Fact]
         void Constructor_should_set_generation_if_it_does_not_exist()
