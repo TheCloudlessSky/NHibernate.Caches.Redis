@@ -348,6 +348,7 @@ namespace NHibernate.Caches.Redis
                 else
                 {
                     SyncGeneration(db);
+                    attempt++;
                 }
             }
 
@@ -361,18 +362,48 @@ namespace NHibernate.Caches.Redis
         private void SyncGeneration(IDatabase db)
         {
             var generationKey = CacheNamespace.GetGenerationKey();
-            var generation = db.StringGet(generationKey);
-            var serverGeneration = Convert.ToInt64(generation);
-            CacheNamespace.SetHigherGeneration(serverGeneration);
+            var serverGenerationValue = db.StringGet(generationKey);
+            var serverGeneration = Convert.ToInt64(serverGenerationValue);
+            var currentGeneration = CacheNamespace.GetGeneration();
 
-            // The generation on the server may have been removed.
-            if (serverGeneration < CacheNamespace.GetGeneration())
+            // Generation was cleared by someone else (shouldn't happen).
+            if (serverGenerationValue.IsNullOrEmpty)
             {
                 db.StringSetAsync(
+                    key: generationKey,
+                    value: currentGeneration,
+                    // Only set if someone else doesn't jump in and set it first.
+                    when: When.NotExists,
+                    flags: CommandFlags.FireAndForget
+                );
+
+                log.InfoFormat("setting server generation ({0}) because it is empty", currentGeneration);
+            }
+            // Generation was lowered by someone else (shouldn't happen).
+            else if (serverGeneration < CacheNamespace.GetGeneration())
+            {
+                var transaction = db.CreateTransaction();
+
+                // Only set if someone else doesn't jump in and set it first.
+                transaction.AddCondition(Condition.StringEqual(generationKey, serverGeneration));
+
+                transaction.StringSetAsync(
                     key: generationKey,
                     value: CacheNamespace.GetGeneration(),
                     flags: CommandFlags.FireAndForget
                 );
+
+                // We don't need to worry about the result because we will
+                // already retry if we can't sync the generation.
+                transaction.ExecuteAsync(CommandFlags.FireAndForget);
+
+                log.InfoFormat("syncing server generation (server={0}, current={1})", serverGeneration, currentGeneration); 
+            }
+            else
+            {
+                CacheNamespace.SetHigherGeneration(serverGeneration);
+
+                log.InfoFormat("syncing server generation (server={0}, current={1})", serverGeneration, currentGeneration);
             }
         }
 

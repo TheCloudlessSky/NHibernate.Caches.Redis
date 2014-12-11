@@ -83,7 +83,47 @@ namespace NHibernate.Caches.Redis.Tests
 
             sut.Put(999, new Person("Foo", 10));
 
-            Assert.Equal(sut.CacheNamespace.GetGeneration(), 101);
+            Assert.Equal(101, sut.CacheNamespace.GetGeneration());
+            var data = Redis.StringGet(sut.CacheNamespace.GetKey(999));
+            var person = (Person)options.Serializer.Deserialize(data);
+            Assert.Equal("Foo", person.Name);
+            Assert.Equal(10, person.Age);
+        }
+
+        [Fact]
+        void Put_should_retry_until_generation_matches_server_when_generation_is_cleared()
+        {
+            var sut = new RedisCache("region", ConnectionMultiplexer, options);
+
+            // Someone cleared the generation (or it doesn't exist yet).
+            Redis.KeyDelete(sut.CacheNamespace.GetGenerationKey());
+
+            sut.Put(999, new Person("Foo", 10));
+
+            Assert.Equal(1, sut.CacheNamespace.GetGeneration());
+            var serverGeneration = Redis.StringGet(sut.CacheNamespace.GetGenerationKey());
+            Assert.Equal(1, serverGeneration);
+
+            var data = Redis.StringGet(sut.CacheNamespace.GetKey(999));
+            var person = (Person)options.Serializer.Deserialize(data);
+            Assert.Equal("Foo", person.Name);
+            Assert.Equal(10, person.Age);
+        }
+
+        [Fact]
+        void Put_should_retry_until_generation_matches_server_when_generation_is_greater_than_server_generation()
+        {
+            var sut = new RedisCache("region", ConnectionMultiplexer, options);
+
+            // Someone has set a lower generation.
+            Redis.StringSet(sut.CacheNamespace.GetGenerationKey(), 0);
+
+            sut.Put(999, new Person("Foo", 10));
+
+            Assert.Equal(1, sut.CacheNamespace.GetGeneration());
+            var serverGeneration = Redis.StringGet(sut.CacheNamespace.GetGenerationKey());
+            Assert.Equal(1, serverGeneration);
+
             var data = Redis.StringGet(sut.CacheNamespace.GetKey(999));
             var person = (Person)options.Serializer.Deserialize(data);
             Assert.Equal("Foo", person.Name);
@@ -213,11 +253,11 @@ namespace NHibernate.Caches.Redis.Tests
             var sut = new RedisCache("region", ConnectionMultiplexer, options);
 
             // Another cache updated its generation (by clearing).
-            Redis.StringIncrement(sut.CacheNamespace.GetGenerationKey(), 100);
+            Redis.StringSet(sut.CacheNamespace.GetGenerationKey(), 100);
 
             sut.Clear();
 
-            Assert.Equal(102, sut.CacheNamespace.GetGeneration());
+            Assert.Equal(101, sut.CacheNamespace.GetGeneration());
         }
 
         [Fact]
