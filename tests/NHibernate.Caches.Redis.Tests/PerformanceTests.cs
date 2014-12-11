@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ProtoBuf;
+using StackExchange.Redis;
 using Xunit;
 
 namespace NHibernate.Caches.Redis.Tests
@@ -13,6 +16,9 @@ namespace NHibernate.Caches.Redis.Tests
         async Task concurrent_sessions()
         {
             DisableLogging();
+            var options = CreateTestProviderOptions();
+            // TODO: options.Serializer = new ProtoBufCacheSerializer();
+            RedisCacheProvider.InternalSetOptions(options);
 
             const int iterations = 10000;
             var sessionFactory = CreateSessionFactory();
