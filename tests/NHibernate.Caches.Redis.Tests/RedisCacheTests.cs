@@ -46,7 +46,7 @@ namespace NHibernate.Caches.Redis.Tests
             var data = Redis.StringGet(cacheKey);
             var expiry = Redis.KeyTimeToLive(cacheKey);
 
-            Assert.True(expiry >= TimeSpan.FromMinutes(4) && expiry <= TimeSpan.FromMinutes(5));
+            Assert.InRange(expiry.Value, low: TimeSpan.FromMinutes(4), high: TimeSpan.FromMinutes(5));
 
             var person = options.Serializer.Deserialize(data) as Person;
             Assert.NotNull(person);
@@ -65,7 +65,7 @@ namespace NHibernate.Caches.Redis.Tests
 
             var cacheKey = sut.CacheNamespace.GetKey(999);
             var expiry = Redis.KeyTimeToLive(cacheKey);
-            Assert.True(expiry >= TimeSpan.FromMinutes(98) && expiry <= TimeSpan.FromMinutes(99));
+            Assert.InRange(expiry.Value, low: TimeSpan.FromMinutes(98), high: TimeSpan.FromMinutes(99));
         }
 
         [Fact]
