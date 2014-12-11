@@ -224,13 +224,14 @@ namespace NHibernate.Caches.Redis
                 var db = GetDatabase();
                 var transaction = db.CreateTransaction();
 
-                var generationIncrement = transaction.StringIncrementAsync(generationKey);
+                var incrementGeneration = transaction.StringIncrementAsync(generationKey);
 
                 transaction.KeyDeleteAsync(setOfKeysKey, CommandFlags.FireAndForget);
 
                 transaction.Execute();
 
-                CacheNamespace.SetHigherGeneration(generationIncrement.Result);
+                var newGeneration = transaction.Wait(incrementGeneration);
+                CacheNamespace.SetHigherGeneration(newGeneration);
             }
             catch (Exception e)
             {
