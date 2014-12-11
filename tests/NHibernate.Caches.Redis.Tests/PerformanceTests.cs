@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,11 +22,10 @@ namespace NHibernate.Caches.Redis.Tests
             {
                 return Task.Run(() =>
                 {
-                    object entityId = null;
                     UsingSession(sessionFactory, session =>
                     {
                         var entity = new Person("Foo", 1);
-                        entityId = session.Save(entity);
+                        var entityId = session.Save(entity);
                         session.Flush();
                         session.Clear();
                     
@@ -36,7 +36,13 @@ namespace NHibernate.Caches.Redis.Tests
                 });
             });
 
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             await Task.WhenAll(tasks);
+
+            stopwatch.Stop();
+            Console.WriteLine("Took on average {0}ms per session", stopwatch.Elapsed.TotalMilliseconds / iterations);
         }
 
         [Fact]
@@ -54,17 +60,19 @@ namespace NHibernate.Caches.Redis.Tests
                 return CreateSessionFactory();
             });
 
-            var tasks = sessionFactories.Select(sessionFactory =>
+            var tasks = sessionFactories.Select((sessionFactory, i) =>
             {
                 return Task.Run(() =>
                 {
-                    for (int i = 0; i < iterations; i++)
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
+
+                    for (int j = 0; j < iterations; j++)
                     {
-                        object entityId = null;
                         UsingSession(sessionFactory, session =>
                         {
                             var entity = new Person("Foo", 1);
-                            entityId = session.Save(entity);
+                            var entityId = session.Save(entity);
                             session.Flush();
                             session.Clear();
 
@@ -73,10 +81,18 @@ namespace NHibernate.Caches.Redis.Tests
                             session.Flush();
                         });
                     }
+
+                    stopwatch.Stop();
+                    return new { SessionFactoryId = i, Elapsed = stopwatch.Elapsed };
                 });
             });
 
-            await Task.WhenAll(tasks);
+            var timings = await Task.WhenAll(tasks);
+
+            foreach (var timing in timings)
+            {
+                Console.WriteLine("SessionFactory#{0} took on average {1}ms per session", timing.SessionFactoryId, timing.Elapsed.TotalMilliseconds / iterations);
+            }
         }
     }
 }
