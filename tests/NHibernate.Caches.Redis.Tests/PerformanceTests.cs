@@ -21,10 +21,17 @@ namespace NHibernate.Caches.Redis.Tests
             {
                 return Task.Run(() =>
                 {
+                    object entityId = null;
                     UsingSession(sessionFactory, session =>
                     {
                         var entity = new Person("Foo", 1);
-                        session.Save(entity);
+                        entityId = session.Save(entity);
+                    });
+
+                    UsingSession(sessionFactory, session =>
+                    {
+                        var entity = session.Load<Person>(entityId);
+                        Assert.NotNull(entity);
                     });
                 });
             });

@@ -68,6 +68,7 @@
     <Compile Include="ICacheSerializer.cs" />
     <Compile Include="NetDataContractCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
+    <Compile Include="RedisCacheGenerationException.cs" />
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCache.cs" />

@@ -34,7 +34,7 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        public void SetGeneration(long newGeneration)
+        public void SetHigherGeneration(long newGeneration)
         {
             if (newGeneration < 0) return;
 

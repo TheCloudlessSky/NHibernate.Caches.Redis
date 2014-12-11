@@ -79,7 +79,7 @@ namespace NHibernate.Caches.Redis
             var @namespace = CacheNamePrefix + RegionName;
 
             CacheNamespace = new RedisNamespace(@namespace);
-            SyncGeneration();
+            SyncInitialGeneration();
         }
 
         public long NextTimestamp()
@@ -87,19 +87,19 @@ namespace NHibernate.Caches.Redis
             return Timestamper.Next();
         }
 
-        private void SyncGeneration()
+        private void SyncInitialGeneration()
         {
             try
             {
                 if (CacheNamespace.GetGeneration() == -1)
                 {
                     var latestGeneration = FetchGeneration();
-                    CacheNamespace.SetGeneration(latestGeneration);
+                    CacheNamespace.SetHigherGeneration(latestGeneration);
                 }
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not sync generation");
+                log.ErrorFormat("could not sync initial generation");
 
                 var evtArg = new RedisCacheExceptionEventArgs(e);
                 OnException(evtArg);
@@ -231,7 +231,7 @@ namespace NHibernate.Caches.Redis
 
                 transaction.Execute();
 
-                CacheNamespace.SetGeneration(generationIncrement.Result);
+                CacheNamespace.SetHigherGeneration(generationIncrement.Result);
             }
             catch (Exception e)
             {
@@ -324,35 +324,55 @@ namespace NHibernate.Caches.Redis
 
         private void ExecuteEnsureGeneration(Action<StackExchange.Redis.ITransaction> action)
         {
-            var db = GetDatabase();
+            var maxRetries = 5;
+            var attempt = 1;
 
-            var executed = false;
-
-            while (!executed)
+            while (attempt <= maxRetries)
             {
-                var generationKey = CacheNamespace.GetGenerationKey();
-                var generation = db.StringGet(generationKey);
-                var serverGeneration = Convert.ToInt64(generation);
-
-                CacheNamespace.SetGeneration(serverGeneration);
-
+                var db = GetDatabase();
                 var transaction = db.CreateTransaction();
 
-                // The generation on the server may have been removed.
-                if (serverGeneration < CacheNamespace.GetGeneration())
-                {
-                    db.StringSetAsync(
-                        key: CacheNamespace.GetGenerationKey(),
-                        value: CacheNamespace.GetGeneration(), 
-                        flags: CommandFlags.FireAndForget
-                    );
-                }
-
+                // We optimistically execute the transaction with the existing
+                // generation. When the generation has changed, the transaction
+                // fails and we sync the generation and retry the transaction.
                 transaction.AddCondition(Condition.StringEqual(CacheNamespace.GetGenerationKey(), CacheNamespace.GetGeneration()));
 
                 action(transaction);
 
-                executed = transaction.Execute();
+                var executed = transaction.Execute();
+
+                if (executed)
+                {
+                    return;
+                }
+                else
+                {
+                    SyncGeneration(db);
+                }
+            }
+
+            var message = String.Format(
+                "Could not execute transaction with synchronized generation (failed after {0} attempts).",
+                maxRetries
+            );
+            throw new RedisCacheGenerationException(message);
+        }
+
+        private void SyncGeneration(IDatabase db)
+        {
+            var generationKey = CacheNamespace.GetGenerationKey();
+            var generation = db.StringGet(generationKey);
+            var serverGeneration = Convert.ToInt64(generation);
+            CacheNamespace.SetHigherGeneration(serverGeneration);
+
+            // The generation on the server may have been removed.
+            if (serverGeneration < CacheNamespace.GetGeneration())
+            {
+                db.StringSetAsync(
+                    key: CacheNamespace.GetGenerationKey(),
+                    value: CacheNamespace.GetGeneration(),
+                    flags: CommandFlags.FireAndForget
+                );
             }
         }
 
