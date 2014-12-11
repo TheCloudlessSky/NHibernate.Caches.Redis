@@ -14,7 +14,7 @@ namespace NHibernate.Caches.Redis.Tests
         {
             DisableLogging();
 
-            const int iterations = 10000;
+            const int iterations = 1000;
             var sessionFactory = CreateSessionFactory();
 
             var tasks = Enumerable.Range(0, iterations).Select(i =>
@@ -26,13 +26,12 @@ namespace NHibernate.Caches.Redis.Tests
                     {
                         var entity = new Person("Foo", 1);
                         entityId = session.Save(entity);
-                    });
-
-                    UsingSession(sessionFactory, session =>
-                    {
-                        var entity = session.Load<Person>(entityId);
+                        session.Flush();
+                        session.Clear();
+                    
+                        entity = session.Load<Person>(entityId);
                         entity.Name = Guid.NewGuid().ToString();
-                        Assert.NotNull(entity);
+                        session.Flush();
                     });
                 });
             });

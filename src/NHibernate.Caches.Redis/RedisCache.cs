@@ -141,10 +141,10 @@ namespace NHibernate.Caches.Redis
                 ExecuteEnsureGeneration(transaction =>
                 {
                     var cacheKey = CacheNamespace.GetKey(key);
-                    transaction.StringSetAsync(cacheKey, data, expiry);
+                    transaction.StringSetAsync(cacheKey, data, expiry, flags: CommandFlags.FireAndForget);
 
                     var setOfKeysKey = CacheNamespace.GetSetOfKeysKey();
-                    transaction.SetAddAsync(setOfKeysKey, cacheKey);
+                    transaction.SetAddAsync(setOfKeysKey, cacheKey, flags: CommandFlags.FireAndForget);
                 });
             }
             catch (Exception e)
@@ -165,16 +165,15 @@ namespace NHibernate.Caches.Redis
 
             try
             {
-                Task<RedisValue> dataResult = null;
+                Task<RedisValue> getCacheValue = null;
 
                 ExecuteEnsureGeneration(transaction =>
                 {
                     var cacheKey = CacheNamespace.GetKey(key);
-                    dataResult = transaction.StringGetAsync(cacheKey);
+                    getCacheValue = transaction.StringGetAsync(cacheKey);
                 });
 
-                var data = dataResult.Result;
-
+                var data = connectionMultiplexer.Wait(getCacheValue);
                 return Deserialize(data);
             }
             catch (Exception e)
