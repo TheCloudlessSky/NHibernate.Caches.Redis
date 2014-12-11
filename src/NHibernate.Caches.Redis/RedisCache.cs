@@ -269,8 +269,8 @@ namespace NHibernate.Caches.Redis
 
                     if (wasLockTaken)
                     {
-                        // It's ok to use Set() instead of Add() because we know
-                        // that only one thread will access the MemoryCache (per-ISession).
+                        // It's ok to use Set() instead of Add() because the 
+                        // lock in Redis will cause other clients to wait.
                         acquiredLocks.Set(lockData.Key, lockData, absoluteExpiration: DateTime.UtcNow.Add(lockTimeout));
                     }
 
