@@ -369,7 +369,7 @@ namespace NHibernate.Caches.Redis
             if (serverGeneration < CacheNamespace.GetGeneration())
             {
                 db.StringSetAsync(
-                    key: CacheNamespace.GetGenerationKey(),
+                    key: generationKey,
                     value: CacheNamespace.GetGeneration(),
                     flags: CommandFlags.FireAndForget
                 );
