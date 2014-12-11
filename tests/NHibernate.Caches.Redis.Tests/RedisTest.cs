@@ -60,7 +60,7 @@ namespace NHibernate.Caches.Redis.Tests
         {
             public IInternalLogger LoggerFor(System.Type type)
             {
-                if (type == typeof(RedisCache))
+                if (type.Namespace.StartsWith(typeof(RedisCache).Namespace))
                 {
                     return new ConsoleLogger();
                 }

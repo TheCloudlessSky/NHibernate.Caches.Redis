@@ -85,9 +85,6 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ExecExtensions.cs">
-      <Link>ExecExtensions.cs</Link>
-    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ICacheSerializer.cs">
       <Link>ICacheSerializer.cs</Link>
     </Compile>
@@ -126,6 +123,9 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisNamespace.cs">
       <Link>RedisNamespace.cs</Link>
+    </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\Retry.cs">
+      <Link>Retry.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\XmlRedisCacheSerializerBase.cs">
       <Link>XmlRedisCacheSerializerBase.cs</Link>

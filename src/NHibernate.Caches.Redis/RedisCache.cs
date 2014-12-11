@@ -257,7 +257,7 @@ namespace NHibernate.Caches.Redis
             {
                 var lockKey = CacheNamespace.GetLockKey(key);
 
-                ExecExtensions.RetryUntilTrue(() =>
+                Retry.UntilTrue(() =>
                 {
                     var lockData = new LockData(
                         key: Convert.ToString(key),

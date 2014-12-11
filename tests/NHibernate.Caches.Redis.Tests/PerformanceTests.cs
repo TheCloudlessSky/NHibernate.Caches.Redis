@@ -10,7 +10,7 @@ namespace NHibernate.Caches.Redis.Tests
     public class PerformanceTests : IntegrationTestBase
     {
         [Fact]
-        async Task concurrent_sessions()
+        async Task concurrent_reads_and_writes()
         {
             DisableLogging();
 
@@ -31,6 +31,7 @@ namespace NHibernate.Caches.Redis.Tests
                     UsingSession(sessionFactory, session =>
                     {
                         var entity = session.Load<Person>(entityId);
+                        entity.Name = Guid.NewGuid().ToString();
                         Assert.NotNull(entity);
                     });
                 });
