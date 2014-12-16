@@ -42,12 +42,28 @@ connectionMultiplexer.Dispose();
 
 Check out the `NHibernate.Caches.Redis.Sample` project to learn more.
 
-Configuration
--------------
+Options
+-------
 
-Inside of the `app/web.config`, a custom configuration section can be added to
-configure each cache region. For example, this feature allows you to control the
-expiration for a specific class that you cache.
+You can customize certain behavior with the `RedisCacheProvider.SetOptions(options)`
+method. For example, you can control how objects are serialized into Redis. 
+[Here is a JSON.NET `ICacheSerializer`](https://gist.github.com/TheCloudlessSky/f60d47ad2ca4dea72583) implementation. Once added to your project, you can then configure the options:
+
+```csharp
+var options = new RedisCacheProviderOptions()
+{
+    Serializer = new NhJsonCacheSerializer()
+};
+RedisCacheProvider.SetOptions(options);
+```
+
+Cache Region Configuration
+--------------------------
+
+Similar to other NHibernate cache providers, inside of the `app/web.config`, a 
+custom configuration section can be added to configure each cache region. For 
+example, this feature allows you to control the expiration for a specific class
+that you cache.
 
 ```xml
 <configSections>
@@ -60,9 +76,6 @@ expiration for a specific class that you cache.
   </caches>
 </nhibernateRedisCache>
 ```
-
-You can customize things like the `ICacheSerializer` used to serialize objects
-to Redis. For example, [here is a JSON.NET implementation](https://gist.github.com/TheCloudlessSky/f60d47ad2ca4dea72583).
 
 Exception Handling
 ------------------
