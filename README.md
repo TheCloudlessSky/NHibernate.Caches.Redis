@@ -162,6 +162,14 @@ public class RequestRecoveryRedisCacheProvider : RedisCacheProvider
 ```
 Then, use `RequestRecoveryRedisCacheProvider` in your `web.config` settings.
 
+StackExchange.Redis and Strong Naming
+-------------------------------------
+
+If one of your other libraries references `StackExchange.Redis.StrongName`, and
+you're having trouble building, [you can use a build alias on the strongly named
+reference](https://github.com/TheCloudlessSky/NHibernate.Caches.Redis/pull/11) 
+to get things to play nice together.
+
 Changelog
 ---------
 
