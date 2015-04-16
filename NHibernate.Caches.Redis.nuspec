@@ -2,14 +2,14 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>NHibernate.Caches.Redis</id>
-    <version>2.0.0-alpha9</version>
+    <version>2.0.0</version>
     <authors>Adrian Phinney</authors>
     <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
     <projectUrl>http://github.com/TheCloudlessSky/NHibernate.Caches.Redis</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>An NHibernate caching provider for Redis.</description>
     <!--<releaseNotes></releaseNotes>-->
-    <copyright>Copyright Harbour Inc. 2014</copyright>
+    <copyright>Copyright Harbour Inc. 2015</copyright>
     <tags>redis caching nhibernate cache provider</tags>
     <dependencies>
       <dependency id="StackExchange.Redis" version="[1.0.322,)" />
