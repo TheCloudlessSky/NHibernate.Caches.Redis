@@ -47,7 +47,8 @@
     </Target>
     
     <Target Name="BuildPackage">
-        <Folder TaskAction="RemoveContent" Path="$(BinRoot)" />
+        <RemoveDir Directories="$(BinRoot)" Condition="Exists('$(BinRoot)')" />
+        <MakeDir Directories="$(BinRoot)"/>
         <Exec WorkingDirectory="$(BinRoot)" 
             Command="$(NugetExe) pack $(RootDirectory)\NHibernate.Caches.Redis.nuspec -OutputDirectory &quot;$(BinRoot)&quot;" />
     </Target>
