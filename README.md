@@ -80,13 +80,11 @@ that you cache.
 Exception Handling
 ------------------
 
-You may require that we gracefully continue to the database as if we "missed"
-the cache if an exception occurs. By default, this is what happens.  
-
-However, there is also the need of advanced exception handling scenarios. For 
-example, imagine if you are using NHibernate in a web project and your Redis
-server is unavailable. You may not want NHibernate to continue to timeout for
-*every* NHibernate operation. You could do something similar to this:
+You may require that NHibernate gracefully continue to the database as if it
+missed the cache when an exception occurs. For example, imagine if you are 
+using NHibernate in a web project and your Redis server is unavailable. 
+You may not want NHibernate to continue to timeout for *every* NHibernate
+operation. You could do something similar to this:
 
 ```csharp
 public class RequestRecoveryRedisCache : RedisCache
