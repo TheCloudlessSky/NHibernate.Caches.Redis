@@ -291,6 +291,11 @@ namespace NHibernate.Caches.Redis
             if (lockData == null)
             {
                 log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired or timed out", key);
+                options.OnUnlockFailed(
+                    new RedisCacheUnlockFailedEventArgs(
+                        RegionName, key, lockKey: null, lockValue: null
+                    )
+                );
                 return;
             }
 
@@ -304,7 +309,13 @@ namespace NHibernate.Caches.Redis
 
                 if (!wasLockReleased)
                 {
-                    log.WarnFormat("attempted to unlock '{0}' but it could not be relased (maybe timed out or was cleared in Redis)", lockData); 
+                    log.WarnFormat("attempted to unlock '{0}' but it could not be relased (maybe timed out or was cleared in Redis)", lockData);
+
+                    options.OnUnlockFailed(
+                        new RedisCacheUnlockFailedEventArgs(
+                            RegionName, key, lockData.LockKey, lockData.LockValue
+                        )
+                    );
                 }
             }
             catch (Exception e)

@@ -367,6 +367,46 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
+        void Unlock_when_not_locally_locked_triggers_event()
+        {
+            var unlockFailedCounter = 0;
+            options.OnUnlockFailed = e =>
+            {
+                if (e.LockKey == null && e.LockValue == null)
+                {
+                    unlockFailedCounter++;
+                }
+            };
+            var sut = new RedisCache("region", ConnectionMultiplexer, options);
+
+            sut.Unlock(123);
+
+            Assert.Equal(1, unlockFailedCounter);
+        }
+
+        [Fact]
+        void Unlock_when_locked_locally_but_not_locked_in_redis_triggers_event()
+        {
+            var unlockFailedCounter = 0;
+            options.OnUnlockFailed = e =>
+            {
+                if (e.LockKey != null && e.LockValue != null)
+                {
+                    unlockFailedCounter++;
+                }
+            };
+            var sut = new RedisCache("region", ConnectionMultiplexer, options);
+            const int key = 123;
+
+            sut.Lock(key);
+            var lockKey = sut.CacheNamespace.GetLockKey(key);
+            Redis.KeyDelete(lockKey);
+            sut.Unlock(key);
+
+            Assert.Equal(1, unlockFailedCounter);
+        }
+
+        [Fact]
         void Should_update_server_generation_when_server_has_less_generation_than_the_client()
         {
             const int key = 1;

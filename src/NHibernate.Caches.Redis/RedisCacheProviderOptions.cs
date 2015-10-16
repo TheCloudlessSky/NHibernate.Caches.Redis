@@ -24,6 +24,8 @@ namespace NHibernate.Caches.Redis
         /// operations.
         /// </summary>
         public Action<RedisCacheExceptionEventArgs> OnException { get; set; }
+
+        public Action<RedisCacheUnlockFailedEventArgs> OnUnlockFailed { get; set; }
         
         /// <summary>
         /// Get or set a factory used for creating the value of the locks.
@@ -47,6 +49,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = new NetDataContractCacheSerializer();
             OnException = DefaultOnException;
+            OnUnlockFailed = DefaultOnUnlockFailed;
             LockValueFactory = DefaultLockValueFactory;
             Database = 0;
             CacheConfigurations = Enumerable.Empty<RedisCacheConfiguration>();
@@ -57,6 +60,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = options.Serializer;
             OnException = options.OnException;
+            OnUnlockFailed = options.OnUnlockFailed;
             LockValueFactory = options.LockValueFactory;
             Database = options.Database;
             CacheConfigurations = options.CacheConfigurations;
@@ -70,6 +74,11 @@ namespace NHibernate.Caches.Redis
         private static void DefaultOnException(RedisCacheExceptionEventArgs e)
         {
             e.Throw = true;
+        }
+
+        private static void DefaultOnUnlockFailed(RedisCacheUnlockFailedEventArgs e)
+        {
+
         }
 
         internal RedisCacheProviderOptions ShallowCloneAndValidate()
@@ -86,6 +95,11 @@ namespace NHibernate.Caches.Redis
             if (clone.OnException == null)
             {
                 throw new InvalidOperationException("A handler for on exception was not confugred on the " + name + ".");                
+            }
+
+            if (clone.OnUnlockFailed == null)
+            {
+                throw new InvalidOperationException("A handler for on unlock failed was not configured on the " + name + ".");
             }
 
             if (clone.LockValueFactory == null)
