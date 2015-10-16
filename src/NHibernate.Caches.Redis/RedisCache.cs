@@ -22,14 +22,14 @@ namespace NHibernate.Caches.Redis
 
         private readonly ConnectionMultiplexer connectionMultiplexer;
         private readonly RedisCacheProviderOptions options;
-        private readonly TimeSpan expiry;
-        private readonly TimeSpan lockTimeout = TimeSpan.FromSeconds(30);
-
-        private const int DefaultExpiry = 300 /*5 minutes*/;
+        private readonly TimeSpan expiration;
+        private readonly TimeSpan lockTimeout;
+        private readonly TimeSpan lockTakeTimeout;
 
         public string RegionName { get; private set; }
         internal RedisNamespace CacheNamespace { get; private set; }
-        public int Timeout { get { return Timestamper.OneMs * 60000; } }
+
+        public int Timeout { get { return Timestamper.OneMs * (int)lockTimeout.TotalMilliseconds; } }
 
         private class LockData
         {
@@ -51,30 +51,25 @@ namespace NHibernate.Caches.Redis
         }
 
         public RedisCache(string regionName, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
-            : this(regionName, new Dictionary<string, string>(), null, connectionMultiplexer, options)
+            : this(regionName, new RedisCacheConfiguration(regionName), connectionMultiplexer, options)
         {
 
         }
 
-        public RedisCache(string regionName, IDictionary<string, string> properties, RedisCacheElement element, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
+        public RedisCache(string regionName, RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
+            RegionName = regionName.ThrowIfNull("regionName");
+            configuration.ThrowIfNull("configuration");
             this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
             this.options = options.ThrowIfNull("options").ShallowCloneAndValidate();
 
-            RegionName = regionName.ThrowIfNull("regionName");
+            expiration = configuration.Expiration;
+            lockTimeout = configuration.LockTimeout;
+            lockTakeTimeout = configuration.LockTakeTimeout;
 
-            if (element == null)
-            {
-                expiry = TimeSpan.FromSeconds(
-                    PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, DefaultExpiry)
-                );
-            }
-            else
-            {
-                expiry = element.Expiration;
-            }
-
-            log.DebugFormat("using expiration : {0} seconds", expiry.TotalSeconds);
+            log.DebugFormat("using expiration='{0}', lockTimeout='{1}', lockTakeTimeout='{2}'", 
+                expiration, lockTimeout, lockTakeTimeout
+            );
 
             var @namespace = CacheNamePrefix + RegionName;
 
@@ -141,7 +136,7 @@ namespace NHibernate.Caches.Redis
                 ExecuteEnsureGeneration(transaction =>
                 {
                     var cacheKey = CacheNamespace.GetKey(key);
-                    transaction.StringSetAsync(cacheKey, data, expiry, flags: CommandFlags.FireAndForget);
+                    transaction.StringSetAsync(cacheKey, data, expiration, flags: CommandFlags.FireAndForget);
 
                     var setOfKeysKey = CacheNamespace.GetSetOfKeysKey();
                     transaction.SetAddAsync(setOfKeysKey, cacheKey, flags: CommandFlags.FireAndForget);
@@ -276,7 +271,7 @@ namespace NHibernate.Caches.Redis
                     }
 
                     return wasLockTaken;
-                }, lockTimeout);
+                }, lockTakeTimeout);
             }
             catch (Exception e)
             {

@@ -60,17 +60,30 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Configure_region_expiration_from_config_element()
+        void Configure_cache_expiration()
         {
-            var configElement = new RedisCacheElement("region", TimeSpan.FromMinutes(99));
-            var props = new Dictionary<string, string>();
-            var sut = new RedisCache("region", props, configElement, ConnectionMultiplexer, options);
+            var configuration = new RedisCacheConfiguration("region", TimeSpan.FromMinutes(99));
+            var sut = new RedisCache("region", configuration, ConnectionMultiplexer, options);
 
             sut.Put(999, new Person("Foo", 10));
 
             var cacheKey = sut.CacheNamespace.GetKey(999);
             var expiry = Redis.KeyTimeToLive(cacheKey);
             Assert.InRange(expiry.Value, low: TimeSpan.FromMinutes(98), high: TimeSpan.FromMinutes(99));
+        }
+
+        [Fact]
+        void Configure_cache_lock_timeout()
+        {
+            var configuration = new RedisCacheConfiguration("region", RedisCacheConfiguration.DefaultExpiration, TimeSpan.FromSeconds(123));
+            var sut = new RedisCache("region", configuration, ConnectionMultiplexer, options);
+            const string key = "123";
+            
+            sut.Lock(key);
+            var lockKey = sut.CacheNamespace.GetLockKey(key);
+
+            var expiry = Redis.KeyTimeToLive(key);
+            Assert.InRange(expiry.Value, low: TimeSpan.FromMinutes(120), high: TimeSpan.FromMinutes(123));
         }
 
         [Fact]

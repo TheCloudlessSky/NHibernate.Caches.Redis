@@ -4,6 +4,7 @@ using System.Text;
 using NHibernate.Cache;
 using System.Configuration;
 using StackExchange.Redis;
+using System.Linq;
 
 namespace NHibernate.Caches.Redis
 {
@@ -12,14 +13,7 @@ namespace NHibernate.Caches.Redis
         private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCacheProvider));
         private static ConnectionMultiplexer connectionMultiplexerStatic;
         private static RedisCacheProviderOptions optionsStatic;
-        private static readonly RedisCacheProviderSection providerSection;
         private static object syncRoot = new object();
-
-        static RedisCacheProvider()
-        {
-            providerSection = ConfigurationManager.GetSection("nhibernateRedisCache") as RedisCacheProviderSection ??
-                new RedisCacheProviderSection();
-        }
 
         /// <summary>
         /// Set the <see cref="StackExchange.Redis.ConnectionMultiplexer"/> to be used to
@@ -100,21 +94,28 @@ namespace NHibernate.Caches.Redis
                     sb.Append(pair.Value);
                     sb.Append(";");
                 }
-                log.Debug("building cache with region: " + regionName + ", properties: " + sb);
+                log.DebugFormat("building cache with region: {0}, properties: {1}", regionName, sb);
             }
 
-            RedisCacheElement configElement = null;
-            if (!String.IsNullOrWhiteSpace(regionName))
+            RedisCacheConfiguration configuration = null;
+
+            if (!String.IsNullOrWhiteSpace(regionName) && optionsStatic.CacheConfigurations != null)
             {
-                configElement = providerSection.Caches[regionName];
+                configuration = optionsStatic.CacheConfigurations.FirstOrDefault(x => x.RegionName == regionName);
             }
 
-            return BuildCache(regionName, properties, configElement, connectionMultiplexerStatic, optionsStatic);
+            if (configuration == null)
+            {
+                log.DebugFormat("loading cache configuration for '{0}' from properties/defaults", regionName);
+                configuration = RedisCacheConfiguration.FromPropertiesOrDefaults(regionName, properties);
+            }
+
+            return BuildCache(regionName, properties, configuration, connectionMultiplexerStatic, optionsStatic);
         }
 
-        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheElement configElement, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
+        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
-            return new RedisCache(regionName, properties, configElement, connectionMultiplexer, options);
+            return new RedisCache(regionName, configuration, connectionMultiplexer, options);
         }
 
         public long NextTimestamp()

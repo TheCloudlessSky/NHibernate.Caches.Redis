@@ -64,6 +64,7 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="RedisCacheConfiguration.cs" />
     <Compile Include="Retry.cs" />
     <Compile Include="ICacheSerializer.cs" />
     <Compile Include="NetDataContractCacheSerializer.cs" />
@@ -72,12 +73,9 @@
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCache.cs" />
-    <Compile Include="RedisCacheElement.cs" />
     <Compile Include="RedisCacheExceptionArgs.cs" />
     <Compile Include="RedisCacheProvider.cs" />
     <Compile Include="RedisCacheProviderOptions.cs" />
-    <Compile Include="RedisCacheElementCollection.cs" />
-    <Compile Include="RedisCacheProviderSection.cs" />
     <Compile Include="RedisNamespace.cs" />
   </ItemGroup>
   <ItemGroup>

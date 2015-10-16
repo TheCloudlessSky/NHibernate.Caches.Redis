@@ -38,12 +38,18 @@ namespace NHibernate.Caches.Redis
         /// </summary>
         public int Database { get; set; }
 
+        /// <summary>
+        /// Get or set the configuration for each region's cache.
+        /// </summary>
+        public IEnumerable<RedisCacheConfiguration> CacheConfigurations { get; set; }
+
         public RedisCacheProviderOptions()
         {
             Serializer = new NetDataContractCacheSerializer();
             OnException = DefaultOnException;
             LockValueFactory = DefaultLockValueFactory;
             Database = 0;
+            CacheConfigurations = Enumerable.Empty<RedisCacheConfiguration>();
         }
 
         // Copy constructor.
@@ -53,6 +59,7 @@ namespace NHibernate.Caches.Redis
             OnException = options.OnException;
             LockValueFactory = options.LockValueFactory;
             Database = options.Database;
+            CacheConfigurations = options.CacheConfigurations;
         }
         
         private static string DefaultLockValueFactory()
@@ -84,6 +91,11 @@ namespace NHibernate.Caches.Redis
             if (clone.LockValueFactory == null)
             {
                 throw new InvalidOperationException("A lock value factory was not confugred on the " + name + ".");
+            }
+
+            if (clone.CacheConfigurations == null)
+            {
+                throw new InvalidOperationException("The cache configurations cannot be null on the " + name + ".");
             }
 
             return clone;

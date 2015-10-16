@@ -100,11 +100,8 @@
     <Compile Include="..\NHibernate.Caches.Redis\RedisCache.cs">
       <Link>RedisCache.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheElement.cs">
-      <Link>RedisCacheElement.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheElementCollection.cs">
-      <Link>RedisCacheElementCollection.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheConfiguration.cs">
+      <Link>RedisCacheConfiguration.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheExceptionArgs.cs">
       <Link>RedisCacheExceptionArgs.cs</Link>
@@ -117,9 +114,6 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheProviderOptions.cs">
       <Link>RedisCacheProviderOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheProviderSection.cs">
-      <Link>RedisCacheProviderSection.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisNamespace.cs">
       <Link>RedisNamespace.cs</Link>
