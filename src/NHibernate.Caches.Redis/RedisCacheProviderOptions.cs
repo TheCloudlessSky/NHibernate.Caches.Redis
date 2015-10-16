@@ -24,7 +24,7 @@ namespace NHibernate.Caches.Redis
         /// operations.
         /// </summary>
         public Action<RedisCacheExceptionEventArgs> OnException { get; set; }
-
+        
         /// <summary>
         /// Get or set a factory used for creating the value of the locks.
         /// For example, this is helpful if you want to identify where the 
