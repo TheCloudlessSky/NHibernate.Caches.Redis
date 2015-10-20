@@ -121,9 +121,6 @@
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheProviderOptions.cs">
       <Link>RedisCacheProviderOptions.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheUnlockFailedEventArgs.cs">
-      <Link>RedisCacheUnlockFailedEventArgs.cs</Link>
-    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisNamespace.cs">
       <Link>RedisNamespace.cs</Link>
     </Compile>
@@ -132,6 +129,9 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryLockTakeArgs.cs">
       <Link>ShouldRetryLockTakeArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\UnlockFailedEventArgs.cs">
+      <Link>UnlockFailedEventArgs.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\XmlRedisCacheSerializerBase.cs">
       <Link>XmlRedisCacheSerializerBase.cs</Link>

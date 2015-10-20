@@ -68,7 +68,7 @@
     <Compile Include="ILockTakeRetryStrategy.cs" />
     <Compile Include="RedisCacheConfiguration.cs" />
     <Compile Include="ShouldRetryLockTakeArgs.cs" />
-    <Compile Include="RedisCacheUnlockFailedEventArgs.cs" />
+    <Compile Include="UnlockFailedEventArgs.cs" />
     <Compile Include="ICacheSerializer.cs" />
     <Compile Include="NetDataContractCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />

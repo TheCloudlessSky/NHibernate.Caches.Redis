@@ -35,7 +35,7 @@ namespace NHibernate.Caches.Redis
         /// Get or set a handler for when unlocking fails (for any reason other
         /// than an exception). This must be thread-safe.
         /// </summary>
-        public Action<RedisCacheUnlockFailedEventArgs> OnUnlockFailed { get; set; }
+        public Action<UnlockFailedEventArgs> OnUnlockFailed { get; set; }
 
         /// <summary>
         /// Get or set a factory used for creating the value of the locks.
@@ -88,7 +88,7 @@ namespace NHibernate.Caches.Redis
             e.Throw = true;
         }
 
-        private static void DefaultOnUnlockFailed(RedisCacheUnlockFailedEventArgs e)
+        private static void DefaultOnUnlockFailed(UnlockFailedEventArgs e)
         {
 
         }
