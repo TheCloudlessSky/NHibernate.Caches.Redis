@@ -262,7 +262,7 @@ namespace NHibernate.Caches.Redis
                         key: Convert.ToString(key),
                         lockKey: lockKey,
                         // Recalculated each attempt to ensure a unique value.
-                        lockValue: options.LockValueFactory()
+                        lockValue: options.LockValueFactory.GetLockValue()
                     );
 
                     if (TryLockTake(lockData))

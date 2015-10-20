@@ -46,11 +46,8 @@ namespace NHibernate.Caches.Redis
 
         /// <summary>
         /// Get or set a factory used for creating the value of the locks.
-        /// For example, this is helpful if you want to identify where the 
-        /// lock was created from (such as including the machine name, process
-        /// id and a random Guid). This must be thread-safe.
         /// </summary>
-        public Func<string> LockValueFactory { get; set; }
+        public ILockValueFactory LockValueFactory { get; set; }
 
         /// <summary>
         /// Control which Redis database is used for the cache.
@@ -69,7 +66,7 @@ namespace NHibernate.Caches.Redis
             LockTakeRetryStrategy = new ExponentialBackoffWithJitterLockTakeRetryStrategy();
             OnLockFailed = DefaultOnLockFailed;
             OnUnlockFailed = DefaultOnUnlockFailed;
-            LockValueFactory = DefaultLockValueFactory;
+            LockValueFactory = new GuidLockValueFactory();
             Database = 0;
             CacheConfigurations = Enumerable.Empty<RedisCacheConfiguration>();
         }
@@ -85,11 +82,6 @@ namespace NHibernate.Caches.Redis
             LockValueFactory = options.LockValueFactory;
             Database = options.Database;
             CacheConfigurations = options.CacheConfigurations;
-        }
-        
-        private static string DefaultLockValueFactory()
-        {
-            return "lock-" + Guid.NewGuid();
         }
 
         private static void DefaultOnException(RedisCacheExceptionEventArgs e)

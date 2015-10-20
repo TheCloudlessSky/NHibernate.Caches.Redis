@@ -88,6 +88,9 @@
     <Compile Include="..\NHibernate.Caches.Redis\ExponentialBackoffWithJitterLockTakeRetryStrategy.cs">
       <Link>ExponentialBackoffWithJitterLockTakeRetryStrategy.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\GuidLockValueFactory.cs">
+      <Link>GuidLockValueFactory.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ICacheSerializer.cs">
       <Link>ICacheSerializer.cs</Link>
     </Compile>

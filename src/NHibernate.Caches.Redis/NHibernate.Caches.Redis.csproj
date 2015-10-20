@@ -64,8 +64,10 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="GuidLockValueFactory.cs" />
     <Compile Include="ExponentialBackoffWithJitterLockTakeRetryStrategy.cs" />
     <Compile Include="ILockTakeRetryStrategy.cs" />
+    <Compile Include="ILockValueFactory.cs" />
     <Compile Include="LockFailedEventArgs.cs" />
     <Compile Include="RedisCacheConfiguration.cs" />
     <Compile Include="ShouldRetryLockTakeArgs.cs" />
