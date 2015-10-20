@@ -5,12 +5,12 @@ using System.Text;
 
 namespace NHibernate.Caches.Redis
 {
-    public class RedisCacheExceptionEventArgs
+    public class ExceptionEventArgs
     {
         public Exception Exception { get; private set; }
         public bool Throw { get; set; }
 
-        internal RedisCacheExceptionEventArgs(Exception exception)
+        internal ExceptionEventArgs(Exception exception)
         {
             this.Exception = exception;
             this.Throw = false;

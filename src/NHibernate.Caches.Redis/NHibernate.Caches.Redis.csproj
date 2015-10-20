@@ -80,7 +80,7 @@
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCache.cs" />
-    <Compile Include="RedisCacheExceptionArgs.cs" />
+    <Compile Include="ExceptionEventArgs.cs" />
     <Compile Include="RedisCacheProvider.cs" />
     <Compile Include="RedisCacheProviderOptions.cs" />
     <Compile Include="RedisNamespace.cs" />

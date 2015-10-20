@@ -23,7 +23,7 @@ namespace NHibernate.Caches.Redis
         /// Get or set a handler for when exceptions occur during cache
         /// operations. This must be thread-safe.
         /// </summary>
-        public Action<RedisCacheExceptionEventArgs> OnException { get; set; }
+        public Action<ExceptionEventArgs> OnException { get; set; }
 
         /// <summary>
         /// Get or set the strategy used when determining whether or not to retry
@@ -84,7 +84,7 @@ namespace NHibernate.Caches.Redis
             CacheConfigurations = options.CacheConfigurations;
         }
 
-        private static void DefaultOnException(RedisCacheExceptionEventArgs e)
+        private static void DefaultOnException(ExceptionEventArgs e)
         {
             e.Throw = true;
         }

@@ -85,6 +85,9 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\ExceptionEventArgs.cs">
+      <Link>ExceptionEventArgs.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ExponentialBackoffWithJitterAcquireLockRetryStrategy.cs">
       <Link>ExponentialBackoffWithJitterAcquireLockRetryStrategy.cs</Link>
     </Compile>
@@ -117,9 +120,6 @@
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheConfiguration.cs">
       <Link>RedisCacheConfiguration.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheExceptionArgs.cs">
-      <Link>RedisCacheExceptionArgs.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheGenerationException.cs">
       <Link>RedisCacheGenerationException.cs</Link>
