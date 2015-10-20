@@ -24,7 +24,7 @@ namespace NHibernate.Caches.Redis
         private readonly RedisCacheProviderOptions options;
         private readonly TimeSpan expiration;
         private readonly TimeSpan lockTimeout;
-        private readonly TimeSpan lockTakeTimeout;
+        private readonly TimeSpan acquireLockTimeout;
 
         public string RegionName { get; private set; }
         internal RedisNamespace CacheNamespace { get; private set; }
@@ -65,10 +65,10 @@ namespace NHibernate.Caches.Redis
 
             expiration = configuration.Expiration;
             lockTimeout = configuration.LockTimeout;
-            lockTakeTimeout = configuration.LockTakeTimeout;
+            acquireLockTimeout = configuration.AcquireLockTimeout;
 
-            log.DebugFormat("using expiration='{0}', lockTimeout='{1}', lockTakeTimeout='{2}'", 
-                expiration, lockTimeout, lockTakeTimeout
+            log.DebugFormat("using expiration='{0}', lockTimeout='{1}', acquireLockTimeout='{2}'", 
+                expiration, lockTimeout, acquireLockTimeout
             );
 
             var @namespace = CacheNamePrefix + RegionName;
@@ -251,12 +251,12 @@ namespace NHibernate.Caches.Redis
             try
             {
                 var lockKey = CacheNamespace.GetLockKey(key);
-                var shouldRetry = options.LockTakeRetryStrategy.GetShouldRetry();
+                var shouldRetry = options.AcquireLockRetryStrategy.GetShouldRetry();
 
-                var wasLockTaken = false;
-                var shouldTryLockTake = true;
+                var wasLockAcquired = false;
+                var shouldTryAcquireLock = true;
                 
-                while (shouldTryLockTake)
+                while (shouldTryAcquireLock)
                 {
                     var lockData = new LockData(
                         key: Convert.ToString(key),
@@ -265,26 +265,26 @@ namespace NHibernate.Caches.Redis
                         lockValue: options.LockValueFactory.GetLockValue()
                     );
 
-                    if (TryLockTake(lockData))
+                    if (TryAcquireLock(lockData))
                     {
-                        wasLockTaken = true;
-                        shouldTryLockTake = false;
+                        wasLockAcquired = true;
+                        shouldTryAcquireLock = false;
                     }
                     else
                     {
-                        var shouldRetryArgs = new ShouldRetryLockTakeArgs(
+                        var shouldRetryArgs = new ShouldRetryAcquireLockArgs(
                             RegionName, lockData.Key, lockData.LockKey,
-                            lockData.LockValue, lockTimeout, lockTakeTimeout
+                            lockData.LockValue, lockTimeout, acquireLockTimeout
                         );
-                        shouldTryLockTake = shouldRetry(shouldRetryArgs);
+                        shouldTryAcquireLock = shouldRetry(shouldRetryArgs);
                     }
                 }
 
-                if (!wasLockTaken)
+                if (!wasLockAcquired)
                 {
                     var lockFailedArgs = new LockFailedEventArgs(
                         RegionName, key, lockKey,
-                        lockTimeout, lockTakeTimeout
+                        lockTimeout, acquireLockTimeout
                     );
                     options.OnLockFailed(lockFailedArgs);
                 }
@@ -299,19 +299,19 @@ namespace NHibernate.Caches.Redis
             }
         }
 
-        private bool TryLockTake(LockData lockData)
+        private bool TryAcquireLock(LockData lockData)
         {
             var db = GetDatabase();
-            var wasLockTaken = db.LockTake(lockData.LockKey, lockData.LockValue, lockTimeout);
+            var wasLockAcquired = db.LockTake(lockData.LockKey, lockData.LockValue, lockTimeout);
 
-            if (wasLockTaken)
+            if (wasLockAcquired)
             {
                 // It's ok to use Set() instead of Add() because the lock in 
                 // Redis will cause other clients to wait.
                 acquiredLocks.Set(lockData.Key, lockData, absoluteExpiration: DateTime.UtcNow.Add(lockTimeout));
             }
 
-            return wasLockTaken;
+            return wasLockAcquired;
         }
 
         public virtual void Unlock(object key)

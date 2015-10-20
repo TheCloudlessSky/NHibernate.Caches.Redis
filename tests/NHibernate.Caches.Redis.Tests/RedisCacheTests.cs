@@ -414,7 +414,7 @@ namespace NHibernate.Caches.Redis.Tests
             {
                 lockFailedCounter++;
             };
-            options.LockTakeRetryStrategy = new DoNotRetryLockTakeRetryStrategry();
+            options.AcquireLockRetryStrategy = new DoNotRetryAcquireLockRetryStrategy();
             var sut = new RedisCache("region", ConnectionMultiplexer, options);
             const int key = 123;
 

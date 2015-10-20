@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NHibernate.Caches.Redis.Tests
 {
-    public class DoNotRetryLockTakeRetryStrategry : ILockTakeRetryStrategy
+    public class DoNotRetryAcquireLockRetryStrategy : IAcquireLockRetryStrategy
     {
-        public ShouldRetryLockTake GetShouldRetry()
+        public ShouldRetryAcquireLock GetShouldRetry()
         {
             return e => false;
         }

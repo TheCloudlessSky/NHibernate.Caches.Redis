@@ -27,9 +27,9 @@ namespace NHibernate.Caches.Redis
 
         /// <summary>
         /// Get or set the strategy used when determining whether or not to retry
-        /// a lock take.
+        /// acquiring a lock.
         /// </summary>
-        public ILockTakeRetryStrategy LockTakeRetryStrategy { get; set; }
+        public IAcquireLockRetryStrategy AcquireLockRetryStrategy { get; set; }
 
         /// <summary>
         /// Get or set a handler for when locking fails (for any reason other
@@ -63,7 +63,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = new NetDataContractCacheSerializer();
             OnException = DefaultOnException;
-            LockTakeRetryStrategy = new ExponentialBackoffWithJitterLockTakeRetryStrategy();
+            AcquireLockRetryStrategy = new ExponentialBackoffWithJitterAcquireLockRetryStrategy();
             OnLockFailed = DefaultOnLockFailed;
             OnUnlockFailed = DefaultOnUnlockFailed;
             LockValueFactory = new GuidLockValueFactory();
@@ -76,7 +76,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = options.Serializer;
             OnException = options.OnException;
-            LockTakeRetryStrategy = options.LockTakeRetryStrategy;
+            AcquireLockRetryStrategy = options.AcquireLockRetryStrategy;
             OnLockFailed = options.OnLockFailed;
             OnUnlockFailed = options.OnUnlockFailed;
             LockValueFactory = options.LockValueFactory;
@@ -97,7 +97,7 @@ namespace NHibernate.Caches.Redis
         private static void DefaultOnLockFailed(LockFailedEventArgs e)
         {
             throw new TimeoutException(
-                String.Format("Lock take for '{0}' exceeded timeout {1}.", e.LockKey, e.LockTakeTimeout)
+                String.Format("Acquiring lock for '{0}' exceeded timeout '{1}'.", e.Key, e.AcquireLockTimeout)
             );
         }
 
@@ -117,9 +117,9 @@ namespace NHibernate.Caches.Redis
                 throw new InvalidOperationException("A handler for on exception was not confugred on the " + name + ".");                
             }
 
-            if (clone.LockTakeRetryStrategy == null)
+            if (clone.AcquireLockRetryStrategy == null)
             {
-                throw new InvalidOperationException("A lock take retry strategy was not configured on the " + name + ".");
+                throw new InvalidOperationException("An acquire lock retry strategy was not configured on the " + name + ".");
             }
 
             if (clone.OnLockFailed == null)

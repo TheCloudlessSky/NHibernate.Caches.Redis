@@ -11,7 +11,7 @@ namespace NHibernate.Caches.Redis
     {
         public static readonly TimeSpan DefaultExpiration = TimeSpan.FromMinutes(5);
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
-        public static readonly TimeSpan DefaultLockTakeTimeout = DefaultLockTimeout;
+        public static readonly TimeSpan DefaultAcquireLockTimeout = DefaultLockTimeout;
 
         public string RegionName { get; private set; }
 
@@ -29,7 +29,7 @@ namespace NHibernate.Caches.Redis
         /// Gets the maximum duration to wait when acquiring a lock for the 
         /// item. By default, this is the same as the lock timeout.
         /// </summary>
-        public TimeSpan LockTakeTimeout { get; private set; }
+        public TimeSpan AcquireLockTimeout { get; private set; }
 
         public RedisCacheConfiguration(string regionName)
             : this(regionName, DefaultExpiration, DefaultLockTimeout)
@@ -37,12 +37,12 @@ namespace NHibernate.Caches.Redis
 
         }
 
-        public RedisCacheConfiguration(string regionName, TimeSpan? expiration = null, TimeSpan? lockTimeout = null, TimeSpan? lockTakeTimeout = null)
+        public RedisCacheConfiguration(string regionName, TimeSpan? expiration = null, TimeSpan? lockTimeout = null, TimeSpan? acquireLockTimeout = null)
         {
             this.RegionName = regionName;
             this.Expiration = expiration ?? DefaultExpiration;
             this.LockTimeout = lockTimeout ?? DefaultLockTimeout;
-            this.LockTakeTimeout = lockTakeTimeout ?? DefaultLockTakeTimeout;
+            this.AcquireLockTimeout = acquireLockTimeout ?? DefaultAcquireLockTimeout;
         }
 
         internal static RedisCacheConfiguration FromPropertiesOrDefaults(string regionName, IDictionary<string, string> properties)
@@ -54,7 +54,7 @@ namespace NHibernate.Caches.Redis
                 regionName: regionName,
                 expiration: expiration,
                 lockTimeout: DefaultLockTimeout,
-                lockTakeTimeout: DefaultLockTakeTimeout
+                acquireLockTimeout: DefaultAcquireLockTimeout
             );
         }
     }

@@ -65,18 +65,18 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="GuidLockValueFactory.cs" />
-    <Compile Include="ExponentialBackoffWithJitterLockTakeRetryStrategy.cs" />
-    <Compile Include="ILockTakeRetryStrategy.cs" />
+    <Compile Include="ExponentialBackoffWithJitterAcquireLockRetryStrategy.cs" />
+    <Compile Include="IAcquireLockRetryStrategy.cs" />
     <Compile Include="ILockValueFactory.cs" />
     <Compile Include="LockFailedEventArgs.cs" />
     <Compile Include="RedisCacheConfiguration.cs" />
-    <Compile Include="ShouldRetryLockTakeArgs.cs" />
+    <Compile Include="ShouldRetryAcquireLockArgs.cs" />
     <Compile Include="UnlockFailedEventArgs.cs" />
     <Compile Include="ICacheSerializer.cs" />
     <Compile Include="NetDataContractCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="RedisCacheGenerationException.cs" />
-    <Compile Include="ShouldRetryLockTake.cs" />
+    <Compile Include="ShouldRetryAcquireLock.cs" />
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCache.cs" />

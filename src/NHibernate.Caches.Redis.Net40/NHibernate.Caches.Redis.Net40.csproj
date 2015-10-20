@@ -85,17 +85,17 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ExponentialBackoffWithJitterLockTakeRetryStrategy.cs">
-      <Link>ExponentialBackoffWithJitterLockTakeRetryStrategy.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\ExponentialBackoffWithJitterAcquireLockRetryStrategy.cs">
+      <Link>ExponentialBackoffWithJitterAcquireLockRetryStrategy.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\GuidLockValueFactory.cs">
       <Link>GuidLockValueFactory.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\IAcquireLockRetryStrategy.cs">
+      <Link>IAcquireLockRetryStrategy.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ICacheSerializer.cs">
       <Link>ICacheSerializer.cs</Link>
-    </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ILockTakeRetryStrategy.cs">
-      <Link>ILockTakeRetryStrategy.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ILockValueFactory.cs">
       <Link>ILockValueFactory.cs</Link>
@@ -133,11 +133,11 @@
     <Compile Include="..\NHibernate.Caches.Redis\RedisNamespace.cs">
       <Link>RedisNamespace.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryLockTake.cs">
-      <Link>ShouldRetryLockTake.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryAcquireLock.cs">
+      <Link>ShouldRetryAcquireLock.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryLockTakeArgs.cs">
-      <Link>ShouldRetryLockTakeArgs.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryAcquireLockArgs.cs">
+      <Link>ShouldRetryAcquireLockArgs.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\UnlockFailedEventArgs.cs">
       <Link>UnlockFailedEventArgs.cs</Link>

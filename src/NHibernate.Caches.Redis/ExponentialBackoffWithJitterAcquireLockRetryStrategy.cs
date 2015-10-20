@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace NHibernate.Caches.Redis
 {
-    public class ExponentialBackoffWithJitterLockTakeRetryStrategy : ILockTakeRetryStrategy
+    public class ExponentialBackoffWithJitterAcquireLockRetryStrategy : IAcquireLockRetryStrategy
     {
-        private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(ExponentialBackoffWithJitterLockTakeRetryStrategy));
+        private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(ExponentialBackoffWithJitterAcquireLockRetryStrategy));
 
-        public delegate void BackoffEventHandler(ShouldRetryLockTakeArgs args, int attempt, int sleep);
+        public delegate void BackoffEventHandler(ShouldRetryAcquireLockArgs args, int attempt, int sleep);
 
         public event BackoffEventHandler Backoff;
 
         private const int sleepBase = 5;
         private const int sleepMax = 500;
 
-        public ShouldRetryLockTake GetShouldRetry()
+        public ShouldRetryAcquireLock GetShouldRetry()
         {
             var firstAttempt = DateTime.UtcNow;
             var attempt = 0;
@@ -26,11 +26,11 @@ namespace NHibernate.Caches.Redis
             var random = new Random(Guid.NewGuid().GetHashCode());
             var onBackoff = Backoff;
 
-            return (ShouldRetryLockTakeArgs args) =>
+            return (ShouldRetryAcquireLockArgs args) =>
             {
                 attempt++;
 
-                var hasNotTimedOut = DateTime.UtcNow - firstAttempt < args.LockTakeTimeout;
+                var hasNotTimedOut = DateTime.UtcNow - firstAttempt < args.AcquireLockTimeout;
 
                 if (hasNotTimedOut)
                 {

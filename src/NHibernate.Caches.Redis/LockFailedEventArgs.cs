@@ -12,15 +12,15 @@ namespace NHibernate.Caches.Redis
         public object Key { get; private set; }
         public string LockKey { get; private set; }
         public TimeSpan LockTimeout { get; private set; }
-        public TimeSpan LockTakeTimeout { get; private set; }
+        public TimeSpan AcquireLockTimeout { get; private set; }
 
-        internal LockFailedEventArgs(string regionName, object key, string lockKey, TimeSpan lockTimeout, TimeSpan lockTakeTimeout)
+        internal LockFailedEventArgs(string regionName, object key, string lockKey, TimeSpan lockTimeout, TimeSpan acquireLockTimeout)
         {
             this.RegionName = regionName;
             this.Key = key;
             this.LockKey = lockKey;
             this.LockTimeout = lockTimeout;
-            this.LockTakeTimeout = lockTakeTimeout;
+            this.AcquireLockTimeout = acquireLockTimeout;
         }
     }
 }

@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace NHibernate.Caches.Redis
 {
-    public interface ILockTakeRetryStrategy
+    public interface IAcquireLockRetryStrategy
     {
         /// <summary>
-        /// Gets a delegate that is used to determine if taking a lock should be retried.
+        /// Gets a delegate that is used to determine if acquiring a lock should be retried.
         /// This must be thread-safe.
         /// </summary>
         /// <returns></returns>
-        ShouldRetryLockTake GetShouldRetry();
+        ShouldRetryAcquireLock GetShouldRetry();
     }
 }
