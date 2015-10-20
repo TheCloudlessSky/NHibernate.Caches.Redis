@@ -251,27 +251,41 @@ namespace NHibernate.Caches.Redis
             try
             {
                 var lockKey = CacheNamespace.GetLockKey(key);
+                var shouldRetry = options.LockTakeRetryStrategy.GetShouldRetry();
 
-                Retry.UntilTrue(() =>
+                var wasLockTaken = false;
+                var shouldTryLockTake = true;
+                
+                while (shouldTryLockTake)
                 {
                     var lockData = new LockData(
                         key: Convert.ToString(key),
                         lockKey: lockKey,
-                        lockValue: GetLockValue()
+                        // Recalculated each attempt to ensure a unique value.
+                        lockValue: options.LockValueFactory()
                     );
 
-                    var db = GetDatabase();
-                    var wasLockTaken = db.LockTake(lockData.LockKey, lockData.LockValue, lockTimeout);
-
-                    if (wasLockTaken)
+                    if (TryLockTake(lockData))
                     {
-                        // It's ok to use Set() instead of Add() because the 
-                        // lock in Redis will cause other clients to wait.
-                        acquiredLocks.Set(lockData.Key, lockData, absoluteExpiration: DateTime.UtcNow.Add(lockTimeout));
+                        wasLockTaken = true;
+                        shouldTryLockTake = false;
                     }
+                    else
+                    {
+                        var shouldRetryArgs = new ShouldRetryLockTakeArgs(
+                            RegionName, lockData.Key, lockData.LockKey,
+                            lockData.LockValue, lockTimeout, lockTakeTimeout
+                        );
+                        shouldTryLockTake = shouldRetry(shouldRetryArgs);
+                    }
+                }
 
-                    return wasLockTaken;
-                }, lockTakeTimeout);
+                if (!wasLockTaken)
+                {
+                    throw new TimeoutException(
+                        String.Format("Exceeded timeout of {0}", lockTakeTimeout)
+                    );
+                }
             }
             catch (Exception e)
             {
@@ -281,6 +295,21 @@ namespace NHibernate.Caches.Redis
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
+        }
+
+        private bool TryLockTake(LockData lockData)
+        {
+            var db = GetDatabase();
+            var wasLockTaken = db.LockTake(lockData.LockKey, lockData.LockValue, lockTimeout);
+
+            if (wasLockTaken)
+            {
+                // It's ok to use Set() instead of Add() because the lock in 
+                // Redis will cause other clients to wait.
+                acquiredLocks.Set(lockData.Key, lockData, absoluteExpiration: DateTime.UtcNow.Add(lockTimeout));
+            }
+
+            return wasLockTaken;
         }
 
         public virtual void Unlock(object key)
@@ -411,11 +440,6 @@ namespace NHibernate.Caches.Redis
 
                 log.InfoFormat("syncing server generation (server={0}, current={1})", serverGeneration, currentGeneration);
             }
-        }
-
-        private string GetLockValue()
-        {
-            return options.LockValueFactory();
         }
 
         private RedisValue Serialize(object value)

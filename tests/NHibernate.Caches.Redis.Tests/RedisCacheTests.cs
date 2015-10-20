@@ -367,7 +367,7 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Unlock_when_not_locally_locked_triggers_event()
+        void Unlock_when_not_locally_locked_triggers_the_unlock_failed_event()
         {
             var unlockFailedCounter = 0;
             options.OnUnlockFailed = e =>
@@ -385,7 +385,7 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Unlock_when_locked_locally_but_not_locked_in_redis_triggers_event()
+        void Unlock_when_locked_locally_but_not_locked_in_redis_triggers_the_unlock_failed_event()
         {
             var unlockFailedCounter = 0;
             options.OnUnlockFailed = e =>

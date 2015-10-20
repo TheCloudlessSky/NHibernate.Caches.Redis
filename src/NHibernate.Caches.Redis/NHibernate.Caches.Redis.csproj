@@ -64,13 +64,16 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ExponentialBackoffWithJitterLockTakeRetryStrategy.cs" />
+    <Compile Include="ILockTakeRetryStrategy.cs" />
     <Compile Include="RedisCacheConfiguration.cs" />
+    <Compile Include="ShouldRetryLockTakeArgs.cs" />
     <Compile Include="RedisCacheUnlockFailedEventArgs.cs" />
-    <Compile Include="Retry.cs" />
     <Compile Include="ICacheSerializer.cs" />
     <Compile Include="NetDataContractCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="RedisCacheGenerationException.cs" />
+    <Compile Include="ShouldRetryLockTake.cs" />
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCache.cs" />

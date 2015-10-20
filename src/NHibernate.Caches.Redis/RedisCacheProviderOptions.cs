@@ -21,17 +21,27 @@ namespace NHibernate.Caches.Redis
 
         /// <summary>
         /// Get or set a handler for when exceptions occur during cache
-        /// operations.
+        /// operations. This must be thread-safe.
         /// </summary>
         public Action<RedisCacheExceptionEventArgs> OnException { get; set; }
 
+        /// <summary>
+        /// Get or set the strategy used when determining whether or not to retry
+        /// a lock take.
+        /// </summary>
+        public ILockTakeRetryStrategy LockTakeRetryStrategy { get; set; }
+
+        /// <summary>
+        /// Get or set a handler for when unlocking fails (for any reason other
+        /// than an exception). This must be thread-safe.
+        /// </summary>
         public Action<RedisCacheUnlockFailedEventArgs> OnUnlockFailed { get; set; }
-        
+
         /// <summary>
         /// Get or set a factory used for creating the value of the locks.
         /// For example, this is helpful if you want to identify where the 
         /// lock was created from (such as including the machine name, process
-        /// id and a random Guid).
+        /// id and a random Guid). This must be thread-safe.
         /// </summary>
         public Func<string> LockValueFactory { get; set; }
 
@@ -49,6 +59,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = new NetDataContractCacheSerializer();
             OnException = DefaultOnException;
+            LockTakeRetryStrategy = new ExponentialBackoffWithJitterLockTakeRetryStrategy();
             OnUnlockFailed = DefaultOnUnlockFailed;
             LockValueFactory = DefaultLockValueFactory;
             Database = 0;
@@ -60,6 +71,7 @@ namespace NHibernate.Caches.Redis
         {
             Serializer = options.Serializer;
             OnException = options.OnException;
+            LockTakeRetryStrategy = options.LockTakeRetryStrategy;
             OnUnlockFailed = options.OnUnlockFailed;
             LockValueFactory = options.LockValueFactory;
             Database = options.Database;
@@ -95,6 +107,11 @@ namespace NHibernate.Caches.Redis
             if (clone.OnException == null)
             {
                 throw new InvalidOperationException("A handler for on exception was not confugred on the " + name + ".");                
+            }
+
+            if (clone.LockTakeRetryStrategy == null)
+            {
+                throw new InvalidOperationException("A lock take retry strategy was not configured on the " + name + ".");
             }
 
             if (clone.OnUnlockFailed == null)

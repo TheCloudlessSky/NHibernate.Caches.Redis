@@ -85,8 +85,14 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\ExponentialBackoffWithJitterLockTakeRetryStrategy.cs">
+      <Link>ExponentialBackoffWithJitterLockTakeRetryStrategy.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\ICacheSerializer.cs">
       <Link>ICacheSerializer.cs</Link>
+    </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\ILockTakeRetryStrategy.cs">
+      <Link>ILockTakeRetryStrategy.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\NetDataContractCacheSerializer.cs">
       <Link>NetDataContractCacheSerializer.cs</Link>
@@ -121,8 +127,11 @@
     <Compile Include="..\NHibernate.Caches.Redis\RedisNamespace.cs">
       <Link>RedisNamespace.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\Retry.cs">
-      <Link>Retry.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryLockTake.cs">
+      <Link>ShouldRetryLockTake.cs</Link>
+    </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\ShouldRetryLockTakeArgs.cs">
+      <Link>ShouldRetryLockTakeArgs.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\XmlRedisCacheSerializerBase.cs">
       <Link>XmlRedisCacheSerializerBase.cs</Link>
