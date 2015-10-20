@@ -70,6 +70,7 @@
     <Compile Include="ILockValueFactory.cs" />
     <Compile Include="LockFailedEventArgs.cs" />
     <Compile Include="RedisCacheConfiguration.cs" />
+    <Compile Include="RedisCacheMethod.cs" />
     <Compile Include="ShouldRetryAcquireLockArgs.cs" />
     <Compile Include="UnlockFailedEventArgs.cs" />
     <Compile Include="ICacheSerializer.cs" />

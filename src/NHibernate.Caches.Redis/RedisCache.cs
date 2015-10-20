@@ -96,7 +96,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not sync initial generation");
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unknown, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
@@ -146,7 +146,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not put in cache : {0}", key);
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
@@ -175,7 +175,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("coult not get from cache : {0}", key);
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
 
@@ -201,7 +201,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not remove from cache : {0}", key);
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
@@ -232,7 +232,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not clear cache : {0}", generationKey);
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
@@ -293,7 +293,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not acquire cache lock : {0}", key);
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
@@ -353,7 +353,7 @@ namespace NHibernate.Caches.Redis
             {
                 log.ErrorFormat("could not release cache lock : {0}", lockData);
 
-                var evtArg = new ExceptionEventArgs(e);
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
                 OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
