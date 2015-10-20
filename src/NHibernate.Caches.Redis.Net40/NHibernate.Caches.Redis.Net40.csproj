@@ -94,6 +94,12 @@
     <Compile Include="..\NHibernate.Caches.Redis\ILockTakeRetryStrategy.cs">
       <Link>ILockTakeRetryStrategy.cs</Link>
     </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\ILockValueFactory.cs">
+      <Link>ILockValueFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\NHibernate.Caches.Redis\LockFailedEventArgs.cs">
+      <Link>LockFailedEventArgs.cs</Link>
+    </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\NetDataContractCacheSerializer.cs">
       <Link>NetDataContractCacheSerializer.cs</Link>
     </Compile>
