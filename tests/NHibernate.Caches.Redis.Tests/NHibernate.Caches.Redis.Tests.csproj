@@ -63,6 +63,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DoNotRetryLockTakeRetryStrategy.cs" />
     <Compile Include="IntegrationTestBase.cs" />
     <Compile Include="IntegrationTests.cs" />
     <Compile Include="PerformanceTests.cs" />

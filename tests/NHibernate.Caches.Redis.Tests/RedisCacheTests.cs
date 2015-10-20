@@ -407,6 +407,24 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
+        void Lock_when_failed_to_acquire_lock_triggers_the_unlock_failed_event()
+        {
+            var lockFailedCounter = 0;
+            options.OnLockFailed = e =>
+            {
+                lockFailedCounter++;
+            };
+            options.LockTakeRetryStrategy = new DoNotRetryLockTakeRetryStrategry();
+            var sut = new RedisCache("region", ConnectionMultiplexer, options);
+            const int key = 123;
+
+            sut.Lock(key);
+            sut.Lock(key);
+
+            Assert.Equal(1, lockFailedCounter);
+        }
+
+        [Fact]
         void Should_update_server_generation_when_server_has_less_generation_than_the_client()
         {
             const int key = 1;

@@ -32,6 +32,13 @@ namespace NHibernate.Caches.Redis
         public ILockTakeRetryStrategy LockTakeRetryStrategy { get; set; }
 
         /// <summary>
+        /// Get or set a handler for when locking fails (for any reason other
+        /// than an exception). By default a <see cref="TimeoutException"/> is thrown.
+        /// This must be thread-safe.
+        /// </summary>
+        public Action<LockFailedEventArgs> OnLockFailed { get; set; }
+
+        /// <summary>
         /// Get or set a handler for when unlocking fails (for any reason other
         /// than an exception). This must be thread-safe.
         /// </summary>
@@ -60,6 +67,7 @@ namespace NHibernate.Caches.Redis
             Serializer = new NetDataContractCacheSerializer();
             OnException = DefaultOnException;
             LockTakeRetryStrategy = new ExponentialBackoffWithJitterLockTakeRetryStrategy();
+            OnLockFailed = DefaultOnLockFailed;
             OnUnlockFailed = DefaultOnUnlockFailed;
             LockValueFactory = DefaultLockValueFactory;
             Database = 0;
@@ -72,6 +80,7 @@ namespace NHibernate.Caches.Redis
             Serializer = options.Serializer;
             OnException = options.OnException;
             LockTakeRetryStrategy = options.LockTakeRetryStrategy;
+            OnLockFailed = options.OnLockFailed;
             OnUnlockFailed = options.OnUnlockFailed;
             LockValueFactory = options.LockValueFactory;
             Database = options.Database;
@@ -93,6 +102,13 @@ namespace NHibernate.Caches.Redis
 
         }
 
+        private static void DefaultOnLockFailed(LockFailedEventArgs e)
+        {
+            throw new TimeoutException(
+                String.Format("Lock take for '{0}' exceeded timeout {1}.", e.LockKey, e.LockTakeTimeout)
+            );
+        }
+
         internal RedisCacheProviderOptions ShallowCloneAndValidate()
         {
             var clone = new RedisCacheProviderOptions(this);
@@ -112,6 +128,11 @@ namespace NHibernate.Caches.Redis
             if (clone.LockTakeRetryStrategy == null)
             {
                 throw new InvalidOperationException("A lock take retry strategy was not configured on the " + name + ".");
+            }
+
+            if (clone.OnLockFailed == null)
+            {
+                throw new InvalidOperationException("A handler for on lock failed was not configured on the " + name + ".");
             }
 
             if (clone.OnUnlockFailed == null)

@@ -282,9 +282,11 @@ namespace NHibernate.Caches.Redis
 
                 if (!wasLockTaken)
                 {
-                    throw new TimeoutException(
-                        String.Format("Exceeded timeout of {0}", lockTakeTimeout)
+                    var lockFailedArgs = new LockFailedEventArgs(
+                        RegionName, key, lockKey,
+                        lockTimeout, lockTakeTimeout
                     );
+                    options.OnLockFailed(lockFailedArgs);
                 }
             }
             catch (Exception e)
