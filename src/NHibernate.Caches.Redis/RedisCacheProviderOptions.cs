@@ -10,9 +10,6 @@ namespace NHibernate.Caches.Redis
 {
     public class RedisCacheProviderOptions
     {
-        // TODO: IGeneration
-        // TODO: Region cache namespaces
-
         /// <summary>
         /// Get or set the serializer used for serializing/deserializing
         /// values from Redis.

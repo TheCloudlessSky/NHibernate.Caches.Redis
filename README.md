@@ -60,21 +60,20 @@ RedisCacheProvider.SetOptions(options);
 Cache Region Configuration
 --------------------------
 
-Similar to other NHibernate cache providers, inside of the `app/web.config`, a 
-custom configuration section can be added to configure each cache region. For 
-example, this feature allows you to control the expiration for a specific class
-that you cache.
+NOTE: XML-based cache configuration (app.config/web.config) was removed in
+version 3.0.
 
-```xml
-<configSections>
-  <section name="nhibernateRedisCache" type="NHibernate.Caches.Redis.RedisCacheProviderSection, NHibernate.Caches.Redis" />
-</configSections>
+Using the `CacheConfigurations` option, you can customize each region:
 
-<nhibernateRedisCache>
-  <caches>
-    <cache region="BlogPost" expiration="900" />
-  </caches>
-</nhibernateRedisCache>
+```csharp
+RedisCacheProvider.SetOptions(new RedisCacheProviderOptions()
+{
+    Serializer = new NetDataContractCacheSerializer(),
+    CacheConfigurations = new[]
+    {
+        new RedisCacheConfiguration("BlogPost", expiration: TimeSpan.FromSeconds(9))
+    }
+});
 ```
 
 Exception Handling
@@ -165,48 +164,72 @@ StackExchange.Redis and Strong Naming
 
 If one of your other libraries references `StackExchange.Redis.StrongName`, and
 you're having trouble building, [you can use a build alias on the strongly named
-reference](https://github.com/TheCloudlessSky/NHibernate.Caches.Redis/pull/11) 
+reference](https://github.com/TheCloudlessSky/NHibernate.Caches.Redis/pull/11)
 to get things to play nice together.
 
 Changelog
 ---------
 
-**2.0.0**
+### 3.0.0
+
+- **IMPORTANT**: Updating to this release will cause all of your caches to be
+  invalidated because of changes to the cache keys.
+- The generational approach to keeping track of keys has been removed in favor of
+  using Lua scripts. This means better performance but will require Redis >= `2.6.12`
+  to support [Lua scripts](http://redis.io/commands/eval). This also means the
+  cache keys are more simple: `NHibernate-Cache:<region_name>:<key>`.
+- Cache region configuration has been moved from XML to code. A `RedisCacheConfiguration`
+  can be created and set on the `RedisCacheProviderOptions.CacheConfigurations` option.
+- Lock values are now created by an `ILockValueFactory` instead of a `Func<string>`.
+- Add customization of the acquire-lock retry strategy (`IAcquireLockRetryStrategy`).
+  The default retry strategy has been changed to use an exponential backoff.
+- Allow configuring the timeout when acquiring a lock. Use the `RedisCacheConfiguration.AcquireLockTimeout`
+  option. It's then available to the `IAcquireLockRetryStrategy`.
+- Rename `RedisCacheExceptionEventArgs` to `ExceptionEventArgs`.
+- Add more context (region name and method name) to the `ExceptionEventArgs`.
+- Add `OnLockFailed` and `OnUnlockFailed` to `RedisCacheProviderOptions` for handling
+  when locking/unlocking fails (other than exceptions).
+
+### 2.0.0
+
 - Switch the Redis library to [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) because of licensing changes with
-ServiceStack.Redis. This obviously causes a few breaking changes with the
-constructors.
+  ServiceStack.Redis. This obviously causes a few breaking changes with the
+  constructors.
 - Introduce `RedisCacheProvider.SetOptions` (so that, for example, you don't 
-need to subclass to override `OnException`).
+  need to subclass to override `OnException`).
 - Allow the serializer to be customized by implementing `ICacheSerializer`
-and setting the `Serializer` on the options. The default serializer uses the
+  and setting the `Serializer` on the options. The default serializer uses the
 `NetDataContractSerializer`.
-- Customize which database the Redis connection uses with the `Database`
-option
+- Customize which database the Redis connection uses with the `Database` option.
 - The cache key no longer duplicates the region prefix. In previous
-versions, caching an object with the type `MyApp.Models.Blog` and a region
-prefix of `v2` would use the key `v2:NHibernate-Cache:v2.ProcedureFlow.Core.Models.User:keys`.
-The key is now `v2:NHibernate-Cache:ProcedureFlow.Core.Models.User:keys`.
+  versions, caching an object with the type `MyApp.Models.Blog` and a region
+  prefix of `v2` would use the key `v2:NHibernate-Cache:v2.ProcedureFlow.Core.Models.User:keys`.
+  The key is now `v2:NHibernate-Cache:ProcedureFlow.Core.Models.User:keys`.
 - Allow the lock value to be customized. This is useful if you want to store
   information such as what machine/process generated the lock to help with
   debugging.
 
+### 1.3.0
 
-**1.3.0**
 - Add the `OnException` method for sub-classing the cache client and handling 
   exceptions.
 
-**1.2.1**
+### 1.2.1
+
 - Update ServiceStack.Redis to 3.9.55.
 
-**1.2.0**
+### 1.2.0
+
 - Allow the provider to gracefully continue when Redis is unavailable.
 - Fix infinite loop when data in Redis was cleared.
 
-**1.1.0**
+### 1.1.0
+
 - Added configuration section for customizing the cache regions.
 - Added sample project.
 
-**1.0.0**
+### 1.0.0
+
 - Initial release.
 
 ---

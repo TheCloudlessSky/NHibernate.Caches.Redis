@@ -7,6 +7,7 @@ using FluentNHibernate.Cfg.Db;
 using NHibernate.Tool.hbm2ddl;
 using NHibernate.Caches.Redis.Sample.Mapping;
 using StackExchange.Redis;
+using System;
 
 namespace NHibernate.Caches.Redis.Sample
 {
@@ -44,7 +45,11 @@ namespace NHibernate.Caches.Redis.Sample
             RedisCacheProvider.SetConnectionMultiplexer(connectionMultiplexer);
             RedisCacheProvider.SetOptions(new RedisCacheProviderOptions()
             {
-                Serializer = new NetDataContractCacheSerializer()
+                Serializer = new NetDataContractCacheSerializer(),
+                CacheConfigurations = new[]
+                {
+                    new RedisCacheConfiguration("NHibernate.Cache.StandardQueryCache", expiration: TimeSpan.FromSeconds(9))
+                }
             });
 
             var dbFile = HttpContext.Current.Server.MapPath("~/App_Data/sample.db");
