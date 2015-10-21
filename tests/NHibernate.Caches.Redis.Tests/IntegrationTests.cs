@@ -15,6 +15,11 @@ namespace NHibernate.Caches.Redis.Tests
                 UsingSession(sf, session =>
                 {
                     personId = session.Save(new Person("Foo", 1));
+
+                    // Put occurs on the next fetch from the DB.
+                    Assert.Equal(0, sf.Statistics.SecondLevelCacheHitCount);
+                    Assert.Equal(0, sf.Statistics.SecondLevelCacheMissCount);
+                    Assert.Equal(0, sf.Statistics.SecondLevelCachePutCount);
                 });
 
                 sf.Statistics.Clear();

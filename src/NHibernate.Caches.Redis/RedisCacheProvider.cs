@@ -110,12 +110,12 @@ namespace NHibernate.Caches.Redis
                 configuration = RedisCacheConfiguration.FromPropertiesOrDefaults(regionName, properties);
             }
 
-            return BuildCache(regionName, properties, configuration, connectionMultiplexerStatic, optionsStatic);
+            return BuildCache(configuration, properties, connectionMultiplexerStatic, optionsStatic);
         }
 
-        protected virtual RedisCache BuildCache(string regionName, IDictionary<string, string> properties, RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
+        protected virtual RedisCache BuildCache(RedisCacheConfiguration configuration, IDictionary<string, string> properties, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
-            return new RedisCache(regionName, configuration, connectionMultiplexer, options);
+            return new RedisCache(configuration, connectionMultiplexer, options);
         }
 
         public long NextTimestamp()

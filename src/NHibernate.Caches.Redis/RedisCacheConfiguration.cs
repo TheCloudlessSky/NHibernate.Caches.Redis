@@ -39,7 +39,7 @@ namespace NHibernate.Caches.Redis
 
         public RedisCacheConfiguration(string regionName, TimeSpan? expiration = null, TimeSpan? lockTimeout = null, TimeSpan? acquireLockTimeout = null)
         {
-            this.RegionName = regionName;
+            this.RegionName = regionName.ThrowIfNull("regionName");
             this.Expiration = expiration ?? DefaultExpiration;
             this.LockTimeout = lockTimeout ?? DefaultLockTimeout;
             this.AcquireLockTimeout = acquireLockTimeout ?? DefaultAcquireLockTimeout;

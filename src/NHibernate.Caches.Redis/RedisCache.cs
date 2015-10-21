@@ -12,13 +12,41 @@ namespace NHibernate.Caches.Redis
 {
     public class RedisCache : ICache
     {
-        private const string CacheNamePrefix = "NHibernate-Cache:";
+        private const string cacheNamespacePrefix = "NHibernate-Cache:";
 
         private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCache));
 
         // The acquired locks do not need to be distributed into Redis because
         // the same ISession will lock/unlock an object.
         private readonly MemoryCache acquiredLocks = new MemoryCache("NHibernate.Caches.Redis.RedisCache");
+
+        private static readonly LuaScript getScript = LuaScript.Prepare(@"
+if redis.call('sismember', @setOfActiveKeysKey, @key) == 1 then
+    local result = redis.call('get', @key)
+    if result == nil then
+        redis.call('srem', @setOfActiveKeysKey, @key)
+    end
+    return result
+else
+    redis.call('del', @key)
+    return nil
+end
+");
+        private static readonly LuaScript putScript = LuaScript.Prepare(@"
+redis.call('sadd', @setOfActiveKeysKey, @key)
+redis.call('set', @key, @value, 'PX', @expiration)
+");
+        private static readonly LuaScript removeScript = LuaScript.Prepare(@"
+redis.call('srem', @setOfActiveKeysKey, @key)
+redis.call('del', @key)
+");
+        private LuaScript unlockScript = LuaScript.Prepare(@"
+if redis.call('get', @lockKey) == @lockValue then
+    return redis.call('del', @lockKey)
+else
+    return 0
+end
+");
 
         private readonly ConnectionMultiplexer connectionMultiplexer;
         private readonly RedisCacheProviderOptions options;
@@ -51,14 +79,14 @@ namespace NHibernate.Caches.Redis
         }
 
         public RedisCache(string regionName, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
-            : this(regionName, new RedisCacheConfiguration(regionName), connectionMultiplexer, options)
+            : this(new RedisCacheConfiguration(regionName), connectionMultiplexer, options)
         {
 
         }
 
-        public RedisCache(string regionName, RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
+        public RedisCache(RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
-            RegionName = regionName.ThrowIfNull("regionName");
+            RegionName = configuration.RegionName;
             configuration.ThrowIfNull("configuration");
             this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
             this.options = options.ThrowIfNull("options").ShallowCloneAndValidate();
@@ -67,14 +95,11 @@ namespace NHibernate.Caches.Redis
             lockTimeout = configuration.LockTimeout;
             acquireLockTimeout = configuration.AcquireLockTimeout;
 
-            log.DebugFormat("using expiration='{0}', lockTimeout='{1}', acquireLockTimeout='{2}'", 
-                expiration, lockTimeout, acquireLockTimeout
+            log.DebugFormat("creating cache: regionName='{0}', expiration='{1}', lockTimeout='{2}', acquireLockTimeout='{3}'", 
+                RegionName, expiration, lockTimeout, acquireLockTimeout
             );
 
-            var @namespace = CacheNamePrefix + RegionName;
-
-            CacheNamespace = new RedisNamespace(@namespace);
-            SyncInitialGeneration();
+            CacheNamespace = new RedisNamespace(cacheNamespacePrefix + RegionName);
         }
 
         public long NextTimestamp()
@@ -82,72 +107,35 @@ namespace NHibernate.Caches.Redis
             return Timestamper.Next();
         }
 
-        private void SyncInitialGeneration()
-        {
-            try
-            {
-                if (CacheNamespace.GetGeneration() == -1)
-                {
-                    var latestGeneration = FetchGeneration();
-                    CacheNamespace.SetHigherGeneration(latestGeneration);
-                }
-            }
-            catch (Exception e)
-            {
-                log.ErrorFormat("could not sync initial generation");
-
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unknown, e);
-                OnException(evtArg);
-                if (evtArg.Throw) throw;
-            }
-        }
-
-        private long FetchGeneration()
-        {
-            var db = GetDatabase();
-
-            var generationKey = CacheNamespace.GetGenerationKey();
-            var attemptedGeneration = db.StringGet(generationKey);
-
-            if (attemptedGeneration.HasValue)
-            {
-                log.DebugFormat("using existing generation : {0}", attemptedGeneration);
-                return Convert.ToInt64(attemptedGeneration);
-            }
-            else
-            {
-                var generation = db.StringIncrement(generationKey);
-                log.DebugFormat("creating new generation : {0}", generation);
-                return generation;
-            }
-        }
-
         public virtual void Put(object key, object value)
         {
             key.ThrowIfNull("key");
             value.ThrowIfNull("value");
 
-            log.DebugFormat("put in cache : {0}", key);
+            log.DebugFormat("put in cache: regionName='{0}', key='{1}'", RegionName, key);
 
             try
             {
-                var data = Serialize(value);
+                var serializedValue = options.Serializer.Serialize(value);
 
-                ExecuteEnsureGeneration(transaction =>
+                var cacheKey = CacheNamespace.GetKey(key);
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+                var db = GetDatabase();
+
+                db.ScriptEvaluate(putScript, new
                 {
-                    var cacheKey = CacheNamespace.GetKey(key);
-                    transaction.StringSetAsync(cacheKey, data, expiration, flags: CommandFlags.FireAndForget);
-
-                    var setOfKeysKey = CacheNamespace.GetSetOfKeysKey();
-                    transaction.SetAddAsync(setOfKeysKey, cacheKey, flags: CommandFlags.FireAndForget);
-                });
+                    key = cacheKey,
+                    setOfActiveKeysKey = setOfActiveKeysKey,
+                    value = serializedValue,
+                    expiration = expiration.TotalMilliseconds
+                }, CommandFlags.FireAndForget);
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not put in cache : {0}", key);
+                log.ErrorFormat("could not put in cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
-                OnException(evtArg);
+                options.OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
         }
@@ -156,27 +144,39 @@ namespace NHibernate.Caches.Redis
         {
             key.ThrowIfNull();
 
-            log.DebugFormat("get from cache : {0}", key);
+            log.DebugFormat("get from cache: regionName='{0}', key='{1}'", RegionName, key);
 
             try
             {
-                Task<RedisValue> getCacheValue = null;
+                var cacheKey = CacheNamespace.GetKey(key);
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
 
-                ExecuteEnsureGeneration(transaction =>
+                var db = GetDatabase();
+                var resultValues = (RedisValue[])db.ScriptEvaluate(getScript, new
                 {
-                    var cacheKey = CacheNamespace.GetKey(key);
-                    getCacheValue = transaction.StringGetAsync(cacheKey);
+                    key = cacheKey,
+                    setOfActiveKeysKey = setOfActiveKeysKey
                 });
 
-                var data = connectionMultiplexer.Wait(getCacheValue);
-                return Deserialize(data);
+                if (resultValues[0].IsNullOrEmpty)
+                {
+                    log.DebugFormat("cache miss: regionName='{0}', key='{1}'", RegionName, key);
+                    return null;
+                }
+                else
+                {
+                    var serializedResult = resultValues[0];
+
+                    var deserializedValue = options.Serializer.Deserialize(serializedResult);
+                    return deserializedValue;
+                }
             }
             catch (Exception e)
             {
-                log.ErrorFormat("coult not get from cache : {0}", key);
+                log.ErrorFormat("coult not get from cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
-                OnException(evtArg);
+                options.OnException(evtArg);
                 if (evtArg.Throw) throw;
 
                 return null;
@@ -187,53 +187,46 @@ namespace NHibernate.Caches.Redis
         {
             key.ThrowIfNull();
 
-            log.DebugFormat("remove from cache : {0}", key);
+            log.DebugFormat("remove from cache: regionName='{0}', key='{1}'", RegionName, key);
 
             try
             {
-                ExecuteEnsureGeneration(transaction =>
+                var cacheKey = CacheNamespace.GetKey(key);
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+                var db = GetDatabase();
+
+                db.ScriptEvaluate(removeScript, new
                 {
-                    var cacheKey = CacheNamespace.GetKey(key);
-                    transaction.KeyDeleteAsync(cacheKey, CommandFlags.FireAndForget);
-                });
+                    key = cacheKey,
+                    setOfActiveKeysKey = setOfActiveKeysKey
+                }, CommandFlags.FireAndForget);
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not remove from cache : {0}", key);
+                log.ErrorFormat("could not remove from cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
-                OnException(evtArg);
+                options.OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
         }
 
         public virtual void Clear()
         {
-            var generationKey = CacheNamespace.GetGenerationKey();
-            var setOfKeysKey = CacheNamespace.GetSetOfKeysKey();
-
-            log.DebugFormat("clear cache : {0}", generationKey);
+            log.DebugFormat("clear cache: regionName='{0}'", RegionName);
 
             try
             {
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
                 var db = GetDatabase();
-                var transaction = db.CreateTransaction();
-
-                var incrementGeneration = transaction.StringIncrementAsync(generationKey);
-
-                transaction.KeyDeleteAsync(setOfKeysKey, CommandFlags.FireAndForget);
-
-                transaction.Execute();
-
-                var newGeneration = transaction.Wait(incrementGeneration);
-                CacheNamespace.SetHigherGeneration(newGeneration);
+                db.KeyDelete(setOfActiveKeysKey, CommandFlags.FireAndForget);
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not clear cache : {0}", generationKey);
+                log.ErrorFormat("could not clear cache: regionName='{0}'", RegionName);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
-                OnException(evtArg);
+                options.OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
         }
@@ -241,12 +234,12 @@ namespace NHibernate.Caches.Redis
         public virtual void Destroy()
         {
             // No-op since Redis is distributed.
-            log.DebugFormat("destroying cache : {0}", CacheNamespace.GetGenerationKey());
+            log.DebugFormat("destroying cache: regionName='{0}'", RegionName);
         }
 
         public virtual void Lock(object key)
         {
-            log.DebugFormat("acquiring cache lock : {0}", key);
+            log.DebugFormat("acquiring cache lock: regionName='{0}', key='{1}'", RegionName, key);
 
             try
             {
@@ -291,10 +284,10 @@ namespace NHibernate.Caches.Redis
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not acquire cache lock : {0}", key);
+                log.ErrorFormat("could not acquire cache lock: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
-                OnException(evtArg);
+                options.OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
         }
@@ -302,7 +295,11 @@ namespace NHibernate.Caches.Redis
         private bool TryAcquireLock(LockData lockData)
         {
             var db = GetDatabase();
-            var wasLockAcquired = db.LockTake(lockData.LockKey, lockData.LockValue, lockTimeout);
+
+            // Don't use IDatabase.LockTake() because we don't use the matching
+            // LockRelease(). So, avoid any confusion. Besides, LockTake() just
+            // calls this anyways.
+            var wasLockAcquired = db.StringSet(lockData.LockKey, lockData.LockValue, lockTimeout, When.NotExists);
 
             if (wasLockAcquired)
             {
@@ -330,13 +327,21 @@ namespace NHibernate.Caches.Redis
                 return;
             }
 
-            log.DebugFormat("releasing cache lock : {0}", lockData);
+            log.DebugFormat("releasing cache lock: regionName='{0}', key='{1}', lockKey='{2}', lockValue='{3}'", 
+                RegionName, lockData.Key, lockData.LockKey, lockData.LockValue
+            );
 
             try
             {
                 var db = GetDatabase();
 
-                var wasLockReleased = db.LockRelease(lockData.LockKey, lockData.LockValue);
+                // Don't use IDatabase.LockRelease() because it uses watch/unwatch
+                // where we prefer an atomic operation (via a script).
+                var wasLockReleased = (bool)db.ScriptEvaluate(unlockScript, new
+                {
+                    lockKey = lockData.LockKey,
+                    lockValue = lockData.LockValue
+                });
 
                 if (!wasLockReleased)
                 {
@@ -351,117 +356,19 @@ namespace NHibernate.Caches.Redis
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not release cache lock : {0}", lockData);
+                log.ErrorFormat("could not release cache lock: regionName='{0}', key='{1}', lockKey='{2}', lockValue='{3}'",
+                    RegionName, lockData.Key, lockData.LockKey, lockData.LockValue
+                );
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
-                OnException(evtArg);
+                options.OnException(evtArg);
                 if (evtArg.Throw) throw;
             }
-        }
-
-        private void ExecuteEnsureGeneration(Action<StackExchange.Redis.ITransaction> action)
-        {
-            var maxRetries = 5;
-            var attempt = 1;
-
-            while (attempt <= maxRetries)
-            {
-                var db = GetDatabase();
-                var transaction = db.CreateTransaction();
-
-                // We optimistically execute the transaction with the existing
-                // generation. When the generation has changed, the transaction
-                // fails and we sync the generation and retry the transaction.
-                transaction.AddCondition(Condition.StringEqual(CacheNamespace.GetGenerationKey(), CacheNamespace.GetGeneration()));
-
-                action(transaction);
-
-                var executed = transaction.Execute();
-
-                if (executed)
-                {
-                    return;
-                }
-                else
-                {
-                    SyncGeneration(db);
-                    attempt++;
-                }
-            }
-
-            var message = String.Format(
-                "Could not execute transaction with synchronized generation (failed after {0} attempts).",
-                maxRetries
-            );
-            throw new RedisCacheGenerationException(message);
-        }
-
-        private void SyncGeneration(IDatabase db)
-        {
-            var generationKey = CacheNamespace.GetGenerationKey();
-            var serverGenerationValue = db.StringGet(generationKey);
-            var serverGeneration = Convert.ToInt64(serverGenerationValue);
-            var currentGeneration = CacheNamespace.GetGeneration();
-
-            // Generation was cleared by someone else (shouldn't happen).
-            if (serverGenerationValue.IsNullOrEmpty)
-            {
-                db.StringSetAsync(
-                    key: generationKey,
-                    value: currentGeneration,
-                    // Only set if someone else doesn't jump in and set it first.
-                    when: When.NotExists,
-                    flags: CommandFlags.FireAndForget
-                );
-
-                log.InfoFormat("setting server generation ({0}) because it is empty", currentGeneration);
-            }
-            // Generation was lowered by someone else (shouldn't happen).
-            else if (serverGeneration < CacheNamespace.GetGeneration())
-            {
-                var transaction = db.CreateTransaction();
-
-                // Only set if someone else doesn't jump in and set it first.
-                transaction.AddCondition(Condition.StringEqual(generationKey, serverGeneration));
-
-                transaction.StringSetAsync(
-                    key: generationKey,
-                    value: CacheNamespace.GetGeneration(),
-                    flags: CommandFlags.FireAndForget
-                );
-
-                // We don't need to worry about the result because we will
-                // already retry if we can't sync the generation.
-                transaction.ExecuteAsync(CommandFlags.FireAndForget);
-
-                log.InfoFormat("syncing server generation (server={0}, current={1})", serverGeneration, currentGeneration); 
-            }
-            else
-            {
-                CacheNamespace.SetHigherGeneration(serverGeneration);
-
-                log.InfoFormat("syncing server generation (server={0}, current={1})", serverGeneration, currentGeneration);
-            }
-        }
-
-        private RedisValue Serialize(object value)
-        {
-            return options.Serializer.Serialize(value);
-        }
-
-        private object Deserialize(RedisValue value)
-        {
-            return options.Serializer.Deserialize(value);
         }
 
         private IDatabase GetDatabase()
         {
             return connectionMultiplexer.GetDatabase(options.Database);
-        }
-
-        private void OnException(ExceptionEventArgs e)
-        {
-            options.OnException(e);
         }
     }
 }

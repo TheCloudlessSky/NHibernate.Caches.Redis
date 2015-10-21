@@ -20,50 +20,10 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Constructor_should_set_generation_if_it_does_not_exist()
-        {
-            var cache = new RedisCache("regionName", ConnectionMultiplexer, options);
-
-            var genKey = cache.CacheNamespace.GetGenerationKey();
-            Assert.Contains("NHibernate-Cache:regionName", genKey);
-            Assert.Equal(1, cache.CacheNamespace.GetGeneration());
-        }
-
-        [Fact]
-        void Constructor_should_get_current_generation_if_it_already_exists()
-        {
-            // Distributed caches.
-            var cache1 = new RedisCache("regionName", ConnectionMultiplexer, options);
-            var cache2 = new RedisCache("regionName", ConnectionMultiplexer, options);
-
-            Assert.Equal(1, cache1.CacheNamespace.GetGeneration());
-            Assert.Equal(1, cache2.CacheNamespace.GetGeneration());
-        }
-
-        [Fact]
-        void Put_should_serialize_item_and_set_with_expiry()
-        {
-            var sut = new RedisCache("region", ConnectionMultiplexer, options);
-
-            sut.Put(999, new Person("Foo", 10));
-
-            var cacheKey = sut.CacheNamespace.GetKey(999);
-            var data = Redis.StringGet(cacheKey);
-            var expiry = Redis.KeyTimeToLive(cacheKey);
-
-            Assert.InRange(expiry.Value, low: TimeSpan.FromMinutes(4), high: TimeSpan.FromMinutes(5));
-
-            var person = options.Serializer.Deserialize(data) as Person;
-            Assert.NotNull(person);
-            Assert.Equal("Foo", person.Name);
-            Assert.Equal(10, person.Age);
-        }
-
-        [Fact]
         void Configure_cache_expiration()
         {
             var configuration = new RedisCacheConfiguration("region", TimeSpan.FromMinutes(99));
-            var sut = new RedisCache("region", configuration, ConnectionMultiplexer, options);
+            var sut = new RedisCache(configuration, ConnectionMultiplexer, options);
 
             sut.Put(999, new Person("Foo", 10));
 
@@ -76,7 +36,7 @@ namespace NHibernate.Caches.Redis.Tests
         void Configure_cache_lock_timeout()
         {
             var configuration = new RedisCacheConfiguration("region", lockTimeout: TimeSpan.FromSeconds(123));
-            var sut = new RedisCache("region", configuration, ConnectionMultiplexer, options);
+            var sut = new RedisCache(configuration, ConnectionMultiplexer, options);
             const string key = "123";
             
             sut.Lock(key);
@@ -87,60 +47,30 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Put_should_retry_until_generation_matches_the_server()
+        void Put_adds_the_item_to_the_cache()
         {
             var sut = new RedisCache("region", ConnectionMultiplexer, options);
 
-            // Another client incremented the generation.
-            Redis.StringIncrement(sut.CacheNamespace.GetGenerationKey(), 100);
-
             sut.Put(999, new Person("Foo", 10));
 
-            Assert.Equal(101, sut.CacheNamespace.GetGeneration());
-            var data = Redis.StringGet(sut.CacheNamespace.GetKey(999));
+            var cacheKey = sut.CacheNamespace.GetKey(999);
+            var data = Redis.StringGet(cacheKey);
             var person = (Person)options.Serializer.Deserialize(data);
             Assert.Equal("Foo", person.Name);
             Assert.Equal(10, person.Age);
         }
 
         [Fact]
-        void Put_should_retry_until_generation_matches_server_when_generation_is_cleared()
+        void Put_sets_an_expiration_on_the_item()
         {
-            var sut = new RedisCache("region", ConnectionMultiplexer, options);
-
-            // Someone cleared the generation (or it doesn't exist yet).
-            Redis.KeyDelete(sut.CacheNamespace.GetGenerationKey());
+            var config = new RedisCacheConfiguration("region", TimeSpan.FromSeconds(30));
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
 
             sut.Put(999, new Person("Foo", 10));
 
-            Assert.Equal(1, sut.CacheNamespace.GetGeneration());
-            var serverGeneration = Redis.StringGet(sut.CacheNamespace.GetGenerationKey());
-            Assert.Equal(1, serverGeneration);
-
-            var data = Redis.StringGet(sut.CacheNamespace.GetKey(999));
-            var person = (Person)options.Serializer.Deserialize(data);
-            Assert.Equal("Foo", person.Name);
-            Assert.Equal(10, person.Age);
-        }
-
-        [Fact]
-        void Put_should_retry_until_generation_matches_server_when_generation_is_greater_than_server_generation()
-        {
-            var sut = new RedisCache("region", ConnectionMultiplexer, options);
-
-            // Someone has set a lower generation.
-            Redis.StringSet(sut.CacheNamespace.GetGenerationKey(), 0);
-
-            sut.Put(999, new Person("Foo", 10));
-
-            Assert.Equal(1, sut.CacheNamespace.GetGeneration());
-            var serverGeneration = Redis.StringGet(sut.CacheNamespace.GetGenerationKey());
-            Assert.Equal(1, serverGeneration);
-
-            var data = Redis.StringGet(sut.CacheNamespace.GetKey(999));
-            var person = (Person)options.Serializer.Deserialize(data);
-            Assert.Equal("Foo", person.Name);
-            Assert.Equal(10, person.Age);
+            var cacheKey = sut.CacheNamespace.GetKey(999);
+            var ttl = Redis.KeyTimeToLive(cacheKey);
+            Assert.InRange(ttl.Value, TimeSpan.FromSeconds(29), TimeSpan.FromSeconds(30));
         }
 
         [Fact]
@@ -167,21 +97,28 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
-        void Get_should_retry_until_generation_matches_the_server()
+        void Get_after_cache_has_been_cleared_returns_null()
         {
-            var sut1 = new RedisCache("region", ConnectionMultiplexer, options);
+            var sut = new RedisCache("region", ConnectionMultiplexer, options);
 
-            // Another client incremented the generation.
-            Redis.StringIncrement(sut1.CacheNamespace.GetGenerationKey(), 100);
-            var sut2 = new RedisCache("region", ConnectionMultiplexer, options);
-            sut2.Put(999, new Person("Foo", 10));
+            sut.Put(999, new Person("John Doe", 20));
+            sut.Clear();
+            var result = sut.Get(999);
 
-            var person = sut1.Get(999) as Person;
+            Assert.Null(result);
+        }
 
-            Assert.Equal(101, sut1.CacheNamespace.GetGeneration());
-            Assert.NotNull(person);
-            Assert.Equal("Foo", person.Name);
-            Assert.Equal(10, person.Age);
+        [Fact]
+        void Get_after_item_has_expired_returns_null()
+        {
+            var config = new RedisCacheConfiguration("region", expiration: TimeSpan.FromMilliseconds(500));
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+            sut.Put(1, new Person("John Doe", 20));
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(600));
+            var result = sut.Get(1);
+
+            Assert.Null(result);
         }
 
         [Fact]
@@ -206,81 +143,39 @@ namespace NHibernate.Caches.Redis.Tests
 
             sut.Remove(999);
 
-            var result = Redis.StringGet(sut.CacheNamespace.GetKey(999));
-            Assert.False(result.HasValue);
+            var result = sut.Get(999);
+            Assert.Null(result);
         }
 
         [Fact]
-        void Remove_should_retry_until_generation_matches_the_server()
-        {
-            var sut1 = new RedisCache("region", ConnectionMultiplexer, options);
-
-            // Another client incremented the generation.
-            Redis.StringIncrement(sut1.CacheNamespace.GetGenerationKey(), 100);
-            var sut2 = new RedisCache("region", ConnectionMultiplexer, options);
-            sut2.Put(999, new Person("Foo", 10));
-
-            sut1.Remove(999);
-
-            Assert.Equal(101, sut1.CacheNamespace.GetGeneration());
-            var result = Redis.StringGet(sut1.CacheNamespace.GetKey(999));
-            Assert.False(result.HasValue);
-        }
-
-        [Fact]
-        void Clear_update_generation_and_clear_keys_for_this_region()
+        void Clear_should_remove_all_items_from_cache()
         {
             var sut = new RedisCache("region", ConnectionMultiplexer, options);
-            sut.Put(1, new Person("Foo", 1));
-            sut.Put(2, new Person("Bar", 2));
-            sut.Put(3, new Person("Baz", 3));
-            var oldKey1 = sut.CacheNamespace.GetKey(1);
-            var oldKey2 = sut.CacheNamespace.GetKey(2);
-            var oldKey3 = sut.CacheNamespace.GetKey(3);
-
-            var setOfKeysKey = sut.CacheNamespace.GetSetOfKeysKey();
+            sut.Put(1, new Person("A", 1));
+            sut.Put(2, new Person("B", 2));
+            sut.Put(3, new Person("C", 3));
+            sut.Put(4, new Person("D", 4));
 
             sut.Clear();
 
-            // New generation.
-            Assert.Equal(2, sut.CacheNamespace.GetGeneration());
-            Assert.False(Redis.StringGet(sut.CacheNamespace.GetKey(1)).HasValue);
-            Assert.False(Redis.StringGet(sut.CacheNamespace.GetKey(2)).HasValue);
-            Assert.False(Redis.StringGet(sut.CacheNamespace.GetKey(3)).HasValue);
-            
-            // List of keys for this region was cleared.
-            Assert.False(Redis.StringGet(setOfKeysKey).HasValue);
-
-            // The old values will expire automatically.
-            var ttl1 = Redis.KeyTimeToLive(oldKey1);
-            Assert.True(ttl1 <= TimeSpan.FromMinutes(5));
-            var ttl2 = Redis.KeyTimeToLive(oldKey2);
-            Assert.True(ttl2 <= TimeSpan.FromMinutes(5));
-            var ttl3 = Redis.KeyTimeToLive(oldKey3);
-            Assert.True(ttl3 <= TimeSpan.FromMinutes(5));
-        }
-
-        [Fact]
-        void Clear_should_ensure_generation_if_another_cache_has_already_incremented_the_generation()
-        {
-            var sut = new RedisCache("region", ConnectionMultiplexer, options);
-
-            // Another cache updated its generation (by clearing).
-            Redis.StringSet(sut.CacheNamespace.GetGenerationKey(), 100);
-
-            sut.Clear();
-
-            Assert.Equal(101, sut.CacheNamespace.GetGeneration());
+            Assert.Null(sut.Get(1));
+            Assert.Null(sut.Get(2));
+            Assert.Null(sut.Get(3));
+            Assert.Null(sut.Get(4));
         }
 
         [Fact]
         void Destroy_should_not_clear()
         {
             var sut = new RedisCache("region", ConnectionMultiplexer, options);
+            sut.Put(1, new Person("John Doe", 20));
 
             sut.Destroy();
 
-            Assert.Equal(1, sut.CacheNamespace.GetGeneration());
+            var result = sut.Get(1);
+            var person = Assert.IsType<Person>(result);
+            Assert.Equal("John Doe", person.Name);
+            Assert.Equal(20, person.Age);
         }
 
         [Fact]
@@ -422,20 +317,6 @@ namespace NHibernate.Caches.Redis.Tests
             sut.Lock(key);
 
             Assert.Equal(1, lockFailedCounter);
-        }
-
-        [Fact]
-        void Should_update_server_generation_when_server_has_less_generation_than_the_client()
-        {
-            const int key = 1;
-            var sut = new RedisCache("region", ConnectionMultiplexer, options);
-
-            sut.Put(key, new Person("A", 1));
-            FlushDb();
-            sut.Put(key, new Person("B", 2));
-
-            var generationKey = sut.CacheNamespace.GetGenerationKey();
-            Assert.Equal(sut.CacheNamespace.GetGeneration().ToString(CultureInfo.InvariantCulture), (string)Redis.StringGet(generationKey));
         }
     }
 }
