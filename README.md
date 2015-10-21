@@ -232,8 +232,6 @@ Changelog
 
 - Initial release.
 
----
-
 Contributors
 ------------
 
