@@ -208,6 +208,7 @@ Changelog
 - Allow the lock value to be customized. This is useful if you want to store
   information such as what machine/process generated the lock to help with
   debugging.
+- Wrap exceptions that can occur in `RedisCache` with `RedisCacheException`.
 
 ### 1.3.0
 
