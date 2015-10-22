@@ -136,7 +136,10 @@ end
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
                 options.OnException(evtArg);
-                if (evtArg.Throw) throw;
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to put item in cache. See inner exception.", e);
+                }
             }
         }
 
@@ -173,11 +176,14 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("coult not get from cache: regionName='{0}', key='{1}'", RegionName, key);
+                log.ErrorFormat("could not get from cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
                 options.OnException(evtArg);
-                if (evtArg.Throw) throw;
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to get item from cache. See inner exception.", e);
+                }
 
                 return null;
             }
@@ -207,7 +213,10 @@ end
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
                 options.OnException(evtArg);
-                if (evtArg.Throw) throw;
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to remove item from cache. See inner exception.", e);
+                }
             }
         }
 
@@ -227,7 +236,10 @@ end
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
                 options.OnException(evtArg);
-                if (evtArg.Throw) throw;
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to clear cache. See inner exception.", e);
+                }
             }
         }
 
@@ -288,7 +300,10 @@ end
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
                 options.OnException(evtArg);
-                if (evtArg.Throw) throw;
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to lock item in cache. See inner exception.", e);
+                }
             }
         }
 
@@ -362,7 +377,10 @@ end
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
                 options.OnException(evtArg);
-                if (evtArg.Throw) throw;
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to unlock item in cache. See inner exception.", e);
+                }
             }
         }
 

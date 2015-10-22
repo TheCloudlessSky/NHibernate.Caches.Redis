@@ -121,8 +121,8 @@
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheConfiguration.cs">
       <Link>RedisCacheConfiguration.cs</Link>
     </Compile>
-    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheGenerationException.cs">
-      <Link>RedisCacheGenerationException.cs</Link>
+    <Compile Include="..\NHibernate.Caches.Redis\RedisCacheException.cs">
+      <Link>RedisCacheException.cs</Link>
     </Compile>
     <Compile Include="..\NHibernate.Caches.Redis\RedisCacheMethod.cs">
       <Link>RedisCacheMethod.cs</Link>

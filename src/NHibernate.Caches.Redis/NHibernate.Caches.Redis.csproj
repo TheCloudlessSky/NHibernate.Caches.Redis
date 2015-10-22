@@ -76,7 +76,7 @@
     <Compile Include="ICacheSerializer.cs" />
     <Compile Include="NetDataContractCacheSerializer.cs" />
     <Compile Include="ObjectExtensions.cs" />
-    <Compile Include="RedisCacheGenerationException.cs" />
+    <Compile Include="RedisCacheException.cs" />
     <Compile Include="ShouldRetryAcquireLock.cs" />
     <Compile Include="XmlRedisCacheSerializerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
