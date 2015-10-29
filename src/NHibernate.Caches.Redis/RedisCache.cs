@@ -86,8 +86,8 @@ end
 
         public RedisCache(RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
+            configuration.ThrowIfNull("configuration").ShallowCloneAndValidate();
             RegionName = configuration.RegionName;
-            configuration.ThrowIfNull("configuration");
             this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
             this.options = options.ThrowIfNull("options").ShallowCloneAndValidate();
 

@@ -18,18 +18,18 @@ namespace NHibernate.Caches.Redis
         /// <summary>
         /// Gets the duration that the item remains in the cache.
         /// </summary>
-        public TimeSpan Expiration { get; private set; }
+        public TimeSpan Expiration { get; set; }
 
         /// <summary>
         /// Gets the maximum duration that the item can be locked.
         /// </summary>
-        public TimeSpan LockTimeout { get; private set; }
+        public TimeSpan LockTimeout { get; set; }
 
         /// <summary>
         /// Gets the maximum duration to wait when acquiring a lock for the 
         /// item. By default, this is the same as the lock timeout.
         /// </summary>
-        public TimeSpan AcquireLockTimeout { get; private set; }
+        public TimeSpan AcquireLockTimeout { get; set; }
 
         public RedisCacheConfiguration(string regionName)
             : this(regionName, DefaultExpiration, DefaultLockTimeout)
@@ -56,6 +56,11 @@ namespace NHibernate.Caches.Redis
                 lockTimeout: DefaultLockTimeout,
                 acquireLockTimeout: DefaultAcquireLockTimeout
             );
+        }
+
+        internal RedisCacheConfiguration ShallowCloneAndValidate()
+        {
+            return new RedisCacheConfiguration(RegionName, Expiration, LockTimeout, AcquireLockTimeout);
         }
     }
 }
