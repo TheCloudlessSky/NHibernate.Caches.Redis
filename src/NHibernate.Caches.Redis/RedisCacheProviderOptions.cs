@@ -17,10 +17,12 @@ namespace NHibernate.Caches.Redis
         public ICacheSerializer Serializer { get; set; }
 
         /// <summary>
-        /// Get or set a handler for when exceptions occur during cache
-        /// operations. This must be thread-safe.
+        /// An event raised when exceptions occur during cache operations.
+        /// If an event handler is not added, by default exceptions are
+        /// thrown.
+        /// This must be thread-safe.
         /// </summary>
-        public Action<ExceptionEventArgs> OnException { get; set; }
+        public event RedisCacheEventHandler<ExceptionEventArgs> Exception;
 
         /// <summary>
         /// Get or set the strategy used when determining whether or not to retry
@@ -29,17 +31,17 @@ namespace NHibernate.Caches.Redis
         public IAcquireLockRetryStrategy AcquireLockRetryStrategy { get; set; }
 
         /// <summary>
-        /// Get or set a handler for when locking fails (for any reason other
-        /// than an exception). By default a <see cref="TimeoutException"/> is thrown.
-        /// This must be thread-safe.
+        /// An event raised when locking fails (for any reason other than an
+        /// exception). If an event handler is not added, by default a 
+        /// <see cref="TimeoutException"/> is thrown. This must be thread-safe.
         /// </summary>
-        public Action<LockFailedEventArgs> OnLockFailed { get; set; }
+        public event RedisCacheEventHandler<LockFailedEventArgs> LockFailed;
 
         /// <summary>
-        /// Get or set a handler for when unlocking fails (for any reason other
+        /// An event raised when unlocking fails (for any reason other
         /// than an exception). This must be thread-safe.
         /// </summary>
-        public Action<UnlockFailedEventArgs> OnUnlockFailed { get; set; }
+        public event RedisCacheEventHandler<UnlockFailedEventArgs> UnlockFailed;
 
         /// <summary>
         /// Get or set a factory used for creating the value of the locks.
@@ -59,10 +61,7 @@ namespace NHibernate.Caches.Redis
         public RedisCacheProviderOptions()
         {
             Serializer = new NetDataContractCacheSerializer();
-            OnException = DefaultOnException;
             AcquireLockRetryStrategy = new ExponentialBackoffWithJitterAcquireLockRetryStrategy();
-            OnLockFailed = DefaultOnLockFailed;
-            OnUnlockFailed = DefaultOnUnlockFailed;
             LockValueFactory = new GuidLockValueFactory();
             Database = 0;
             CacheConfigurations = Enumerable.Empty<RedisCacheConfiguration>();
@@ -72,30 +71,13 @@ namespace NHibernate.Caches.Redis
         private RedisCacheProviderOptions(RedisCacheProviderOptions options)
         {
             Serializer = options.Serializer;
-            OnException = options.OnException;
+            Exception = options.Exception;
             AcquireLockRetryStrategy = options.AcquireLockRetryStrategy;
-            OnLockFailed = options.OnLockFailed;
-            OnUnlockFailed = options.OnUnlockFailed;
+            LockFailed = options.LockFailed;
+            UnlockFailed = options.UnlockFailed;
             LockValueFactory = options.LockValueFactory;
             Database = options.Database;
             CacheConfigurations = options.CacheConfigurations;
-        }
-
-        private static void DefaultOnException(ExceptionEventArgs e)
-        {
-            e.Throw = true;
-        }
-
-        private static void DefaultOnUnlockFailed(UnlockFailedEventArgs e)
-        {
-
-        }
-
-        private static void DefaultOnLockFailed(LockFailedEventArgs e)
-        {
-            throw new TimeoutException(
-                String.Format("Acquiring lock for '{0}' exceeded timeout '{1}'.", e.Key, e.AcquireLockTimeout)
-            );
         }
 
         internal RedisCacheProviderOptions ShallowCloneAndValidate()
@@ -109,24 +91,9 @@ namespace NHibernate.Caches.Redis
                 throw new InvalidOperationException("A serializer was not configured on the " + name + ".");
             }
 
-            if (clone.OnException == null)
-            {
-                throw new InvalidOperationException("A handler for on exception was not confugred on the " + name + ".");                
-            }
-
             if (clone.AcquireLockRetryStrategy == null)
             {
                 throw new InvalidOperationException("An acquire lock retry strategy was not configured on the " + name + ".");
-            }
-
-            if (clone.OnLockFailed == null)
-            {
-                throw new InvalidOperationException("A handler for on lock failed was not configured on the " + name + ".");
-            }
-
-            if (clone.OnUnlockFailed == null)
-            {
-                throw new InvalidOperationException("A handler for on unlock failed was not configured on the " + name + ".");
             }
 
             if (clone.LockValueFactory == null)
@@ -140,6 +107,50 @@ namespace NHibernate.Caches.Redis
             }
 
             return clone;
+        }
+
+        internal void OnException(RedisCache sender, ExceptionEventArgs e)
+        {
+            var onException = Exception;
+
+            if (onException == null)
+            {
+                e.Throw = true;
+            }
+            else
+            {
+                onException(sender, e);
+            }
+        }
+
+        internal void OnUnlockFailed(RedisCache sender, UnlockFailedEventArgs e)
+        {
+            var onUnlockFailed = UnlockFailed;
+
+            if (onUnlockFailed == null)
+            {
+                // No-op.
+            }
+            else
+            {
+                onUnlockFailed(sender, e);
+            }
+        }
+
+        internal void OnLockFailed(RedisCache sender, LockFailedEventArgs e)
+        {
+            var onLockFailed = LockFailed;
+
+            if (onLockFailed == null)
+            {
+                throw new TimeoutException(
+                    String.Format("Acquiring lock for '{0}' exceeded timeout '{1}'.", e.Key, e.AcquireLockTimeout)
+                );
+            }
+            else
+            {
+                onLockFailed(sender, e);
+            }
         }
     }
 }

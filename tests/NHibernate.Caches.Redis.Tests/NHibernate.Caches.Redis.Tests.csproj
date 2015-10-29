@@ -69,6 +69,7 @@
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="Person.cs" />
     <Compile Include="PersonMapping.cs" />
+    <Compile Include="RedisCacheProviderOptionsTests.cs" />
     <Compile Include="RedisCacheTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisTest.cs" />

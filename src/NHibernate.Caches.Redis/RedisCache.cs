@@ -135,7 +135,7 @@ end
                 log.ErrorFormat("could not put in cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
-                options.OnException(evtArg);
+                options.OnException(this, evtArg);
                 if (evtArg.Throw)
                 {
                     throw new RedisCacheException(RegionName, "Failed to put item in cache. See inner exception.", e);
@@ -179,7 +179,7 @@ end
                 log.ErrorFormat("could not get from cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
-                options.OnException(evtArg);
+                options.OnException(this, evtArg);
                 if (evtArg.Throw)
                 {
                     throw new RedisCacheException(RegionName, "Failed to get item from cache. See inner exception.", e);
@@ -212,7 +212,7 @@ end
                 log.ErrorFormat("could not remove from cache: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
-                options.OnException(evtArg);
+                options.OnException(this, evtArg);
                 if (evtArg.Throw)
                 {
                     throw new RedisCacheException(RegionName, "Failed to remove item from cache. See inner exception.", e);
@@ -235,7 +235,7 @@ end
                 log.ErrorFormat("could not clear cache: regionName='{0}'", RegionName);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
-                options.OnException(evtArg);
+                options.OnException(this, evtArg);
                 if (evtArg.Throw)
                 {
                     throw new RedisCacheException(RegionName, "Failed to clear cache. See inner exception.", e);
@@ -291,7 +291,7 @@ end
                         RegionName, key, lockKey,
                         lockTimeout, acquireLockTimeout
                     );
-                    options.OnLockFailed(lockFailedArgs);
+                    options.OnLockFailed(this, lockFailedArgs);
                 }
             }
             catch (Exception e)
@@ -299,7 +299,7 @@ end
                 log.ErrorFormat("could not acquire cache lock: regionName='{0}', key='{1}'", RegionName, key);
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
-                options.OnException(evtArg);
+                options.OnException(this, evtArg);
                 if (evtArg.Throw)
                 {
                     throw new RedisCacheException(RegionName, "Failed to lock item in cache. See inner exception.", e);
@@ -334,11 +334,10 @@ end
             if (lockData == null)
             {
                 log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired or timed out", key);
-                options.OnUnlockFailed(
-                    new UnlockFailedEventArgs(
-                        RegionName, key, lockKey: null, lockValue: null
-                    )
+                var unlockFailedEventArgs = new UnlockFailedEventArgs(
+                    RegionName, key, lockKey: null, lockValue: null
                 );
+                options.OnUnlockFailed(this, unlockFailedEventArgs);
                 return;
             }
 
@@ -362,11 +361,10 @@ end
                 {
                     log.WarnFormat("attempted to unlock '{0}' but it could not be relased (maybe timed out or was cleared in Redis)", lockData);
 
-                    options.OnUnlockFailed(
-                        new UnlockFailedEventArgs(
-                            RegionName, key, lockData.LockKey, lockData.LockValue
-                        )
+                    var unlockFailedEventArgs = new UnlockFailedEventArgs(
+                        RegionName, key, lockData.LockKey, lockData.LockValue
                     );
+                    options.OnUnlockFailed(this, unlockFailedEventArgs);
                 }
             }
             catch (Exception e)
@@ -376,7 +374,7 @@ end
                 );
 
                 var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
-                options.OnException(evtArg);
+                options.OnException(this, evtArg);
                 if (evtArg.Throw)
                 {
                     throw new RedisCacheException(RegionName, "Failed to unlock item in cache. See inner exception.", e);
