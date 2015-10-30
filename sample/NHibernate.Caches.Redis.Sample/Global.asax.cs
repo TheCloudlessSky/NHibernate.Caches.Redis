@@ -48,7 +48,10 @@ namespace NHibernate.Caches.Redis.Sample
                 Serializer = new NetDataContractCacheSerializer(),
                 CacheConfigurations = new[]
                 {
-                    new RedisCacheConfiguration("NHibernate.Cache.StandardQueryCache", expiration: TimeSpan.FromSeconds(9))
+                    new RedisCacheConfiguration("NHibernate.Cache.StandardQueryCache")
+                    {
+                        Expiration = TimeSpan.FromSeconds(9)
+                    }
                 }
             });
 

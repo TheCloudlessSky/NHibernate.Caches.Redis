@@ -22,7 +22,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Configure_cache_expiration()
         {
-            var configuration = new RedisCacheConfiguration("region", TimeSpan.FromMinutes(99));
+            var configuration = new RedisCacheConfiguration("region") { Expiration = TimeSpan.FromMinutes(99) };
             var sut = new RedisCache(configuration, ConnectionMultiplexer, options);
 
             sut.Put(999, new Person("Foo", 10));
@@ -35,7 +35,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Configure_cache_lock_timeout()
         {
-            var configuration = new RedisCacheConfiguration("region", lockTimeout: TimeSpan.FromSeconds(123));
+            var configuration = new RedisCacheConfiguration("region") { LockTimeout = TimeSpan.FromSeconds(123) };
             var sut = new RedisCache(configuration, ConnectionMultiplexer, options);
             const string key = "123";
             
@@ -63,7 +63,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Put_sets_an_expiration_on_the_item()
         {
-            var config = new RedisCacheConfiguration("region", TimeSpan.FromSeconds(30));
+            var config = new RedisCacheConfiguration("region") { Expiration = TimeSpan.FromSeconds(30) };
             var sut = new RedisCache(config, ConnectionMultiplexer, options);
 
             sut.Put(999, new Person("Foo", 10));
@@ -111,7 +111,7 @@ namespace NHibernate.Caches.Redis.Tests
         [Fact]
         void Get_after_item_has_expired_returns_null()
         {
-            var config = new RedisCacheConfiguration("region", expiration: TimeSpan.FromMilliseconds(500));
+            var config = new RedisCacheConfiguration("region") { Expiration = TimeSpan.FromMilliseconds(500) };
             var sut = new RedisCache(config, ConnectionMultiplexer, options);
             sut.Put(1, new Person("John Doe", 20));
 
@@ -119,6 +119,63 @@ namespace NHibernate.Caches.Redis.Tests
             var result = sut.Get(1);
 
             Assert.Null(result);
+        }
+
+        [Fact]
+        void Get_when_sliding_expiration_not_set_does_not_extend_the_expiration()
+        {
+            var config = new RedisCacheConfiguration("region")
+            {
+                Expiration = TimeSpan.FromMilliseconds(500),
+                SlidingExpiration = RedisCacheConfiguration.NoSlidingExpiration
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+            sut.Put(1, new Person("John Doe", 10));
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
+            var result = sut.Get(1);
+
+            var cacheKey = sut.CacheNamespace.GetKey(1);
+            var expiry = Redis.KeyTimeToLive(cacheKey);
+            Assert.InRange(expiry.Value, TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(300));
+        }
+
+        [Fact]
+        void Get_when_sliding_expiration_set_and_time_to_live_is_greater_than_expiration_does_not_reset_the_expiration()
+        {
+            var config = new RedisCacheConfiguration("region")
+            {
+                Expiration = TimeSpan.FromMilliseconds(500),
+                SlidingExpiration = TimeSpan.FromMilliseconds(100)
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+            sut.Put(1, new Person("John Doe", 10));
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
+            var result = sut.Get(1);
+
+            var cacheKey = sut.CacheNamespace.GetKey(1);
+            var expiry = Redis.KeyTimeToLive(cacheKey);
+            Assert.InRange(expiry.Value, TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(300));
+        }
+
+        [Fact]
+        void Get_when_sliding_expiration_and_time_to_live_is_less_than_expiration_resets_the_expiration()
+        {
+            var config = new RedisCacheConfiguration("region")
+            {
+                Expiration = TimeSpan.FromMilliseconds(500),
+                SlidingExpiration = TimeSpan.FromMilliseconds(400)
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+            sut.Put(1, new Person("John Doe", 10));
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
+            var result = sut.Get(1);
+
+            var cacheKey = sut.CacheNamespace.GetKey(1);
+            var expiry = Redis.KeyTimeToLive(cacheKey);
+            Assert.InRange(expiry.Value, TimeSpan.FromMilliseconds(480), TimeSpan.FromMilliseconds(500));
         }
 
         [Fact]

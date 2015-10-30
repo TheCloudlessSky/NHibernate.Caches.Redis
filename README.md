@@ -184,7 +184,10 @@ Changelog
 - Add customization of the acquire-lock retry strategy (`IAcquireLockRetryStrategy`).
   The default retry strategy has been changed to use an exponential backoff.
 - Allow configuring the timeout when acquiring a lock. Use the `RedisCacheConfiguration.AcquireLockTimeout`
-  option. It's then available to the `IAcquireLockRetryStrategy`.
+  property. It's then available to the `IAcquireLockRetryStrategy`.
+- Allow getting an item from the cache to reset the expiration (sliding expiration).
+  Use the `RedisCacheConfiguration.SlidingExpiration` property. By default, no 
+  sliding expiration occurs.
 - Rename `RedisCacheExceptionEventArgs` to `ExceptionEventArgs`.
 - Add more context (region name and method name) to the `ExceptionEventArgs`.
 - Add `OnLockFailed` and `OnUnlockFailed` to `RedisCacheProviderOptions` for handling

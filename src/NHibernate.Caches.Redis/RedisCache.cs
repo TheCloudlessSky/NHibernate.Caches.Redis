@@ -32,6 +32,16 @@ else
     return nil
 end
 ");
+        private static readonly LuaScript slidingExpirationScript = LuaScript.Prepare(@"
+local pttl = redis.call('pttl', @key)
+if pttl <= tonumber(@slidingExpiration) then
+    redis.call('pexpire', @key, @expiration)
+    return true
+else
+    return false
+end
+");
+
         private static readonly LuaScript putScript = LuaScript.Prepare(@"
 redis.call('sadd', @setOfActiveKeysKey, @key)
 redis.call('set', @key, @value, 'PX', @expiration)
@@ -48,9 +58,17 @@ else
 end
 ");
 
+// Help with debugging scripts since exceptions are swallowed with FireAndForget.
+#if DEBUG
+        private const CommandFlags fireAndForgetFlags = CommandFlags.None;
+#else
+        private const CommandFlags fireAndForgetFlags = CommandFlags.FireAndForget;
+#endif
+
         private readonly ConnectionMultiplexer connectionMultiplexer;
         private readonly RedisCacheProviderOptions options;
         private readonly TimeSpan expiration;
+        private readonly TimeSpan slidingExpiration;
         private readonly TimeSpan lockTimeout;
         private readonly TimeSpan acquireLockTimeout;
 
@@ -86,14 +104,17 @@ end
 
         public RedisCache(RedisCacheConfiguration configuration, ConnectionMultiplexer connectionMultiplexer, RedisCacheProviderOptions options)
         {
-            configuration.ThrowIfNull("configuration").ShallowCloneAndValidate();
+            configuration.ThrowIfNull("configuration")
+                .Validate();
             RegionName = configuration.RegionName;
-            this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
-            this.options = options.ThrowIfNull("options").ShallowCloneAndValidate();
-
             expiration = configuration.Expiration;
+            slidingExpiration = configuration.SlidingExpiration;
             lockTimeout = configuration.LockTimeout;
             acquireLockTimeout = configuration.AcquireLockTimeout;
+
+            this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
+            this.options = options.ThrowIfNull("options")
+                .ShallowCloneAndValidate();
 
             log.DebugFormat("creating cache: regionName='{0}', expiration='{1}', lockTimeout='{2}', acquireLockTimeout='{3}'", 
                 RegionName, expiration, lockTimeout, acquireLockTimeout
@@ -128,7 +149,7 @@ end
                     setOfActiveKeysKey = setOfActiveKeysKey,
                     value = serializedValue,
                     expiration = expiration.TotalMilliseconds
-                }, CommandFlags.FireAndForget);
+                }, fireAndForgetFlags);
             }
             catch (Exception e)
             {
@@ -155,6 +176,7 @@ end
                 var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
 
                 var db = GetDatabase();
+
                 var resultValues = (RedisValue[])db.ScriptEvaluate(getScript, new
                 {
                     key = cacheKey,
@@ -171,6 +193,17 @@ end
                     var serializedResult = resultValues[0];
 
                     var deserializedValue = options.Serializer.Deserialize(serializedResult);
+
+                    if (deserializedValue != null && slidingExpiration != RedisCacheConfiguration.NoSlidingExpiration)
+                    {
+                        db.ScriptEvaluate(slidingExpirationScript, new
+                        {
+                            key = cacheKey,
+                            expiration = expiration.TotalMilliseconds,
+                            slidingExpiration = slidingExpiration.TotalMilliseconds
+                        }, fireAndForgetFlags);
+                    }
+
                     return deserializedValue;
                 }
             }
@@ -205,7 +238,7 @@ end
                 {
                     key = cacheKey,
                     setOfActiveKeysKey = setOfActiveKeysKey
-                }, CommandFlags.FireAndForget);
+                }, fireAndForgetFlags);
             }
             catch (Exception e)
             {
@@ -228,7 +261,7 @@ end
             {
                 var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
                 var db = GetDatabase();
-                db.KeyDelete(setOfActiveKeysKey, CommandFlags.FireAndForget);
+                db.KeyDelete(setOfActiveKeysKey, fireAndForgetFlags);
             }
             catch (Exception e)
             {

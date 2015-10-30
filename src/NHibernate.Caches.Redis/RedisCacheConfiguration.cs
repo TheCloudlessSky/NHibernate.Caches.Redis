@@ -12,37 +12,52 @@ namespace NHibernate.Caches.Redis
         public static readonly TimeSpan DefaultExpiration = TimeSpan.FromMinutes(5);
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
         public static readonly TimeSpan DefaultAcquireLockTimeout = DefaultLockTimeout;
+        public static readonly TimeSpan NoSlidingExpiration = TimeSpan.Zero;
 
         public string RegionName { get; private set; }
 
         /// <summary>
-        /// Gets the duration that the item remains in the cache.
+        /// Gets or sets the duration that the item remains in the cache.
         /// </summary>
         public TimeSpan Expiration { get; set; }
 
         /// <summary>
-        /// Gets the maximum duration that the item can be locked.
+        /// Gets or sets the span of time allowed before an item's expiration
+        /// that will cause it to be re-expired when getting it from the cache.
+        /// 
+        /// For example, setting the Expiration to 10 minutes and the
+        /// SlidingExpiration to 3 minutes means that the item must be accessed
+        /// within the last 3 minutes to cause the expiration to be reset.
+        /// 
+        /// If it is desired to always re-expire the item when getting it from
+        /// the cache, set this to the same value as the Expiration.
+        /// 
+        /// To emulate a sliding expiration policy siliar to ASP.NET's forms
+        /// authentication, set this to half of the Expiration.
+        /// 
+        /// By defafult, no sliding expiration will occur (getting the item
+        /// from the cache will not cause it to re-expire).
+        /// </summary>
+        public TimeSpan SlidingExpiration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum duration that the item can be locked.
         /// </summary>
         public TimeSpan LockTimeout { get; set; }
 
         /// <summary>
-        /// Gets the maximum duration to wait when acquiring a lock for the 
-        /// item. By default, this is the same as the lock timeout.
+        /// Gets or sets the maximum duration to wait when acquiring a lock
+        /// for the item. By default, this is the same as the lock timeout.
         /// </summary>
         public TimeSpan AcquireLockTimeout { get; set; }
 
         public RedisCacheConfiguration(string regionName)
-            : this(regionName, DefaultExpiration, DefaultLockTimeout)
-        {
-
-        }
-
-        public RedisCacheConfiguration(string regionName, TimeSpan? expiration = null, TimeSpan? lockTimeout = null, TimeSpan? acquireLockTimeout = null)
         {
             this.RegionName = regionName.ThrowIfNull("regionName");
-            this.Expiration = expiration ?? DefaultExpiration;
-            this.LockTimeout = lockTimeout ?? DefaultLockTimeout;
-            this.AcquireLockTimeout = acquireLockTimeout ?? DefaultAcquireLockTimeout;
+            this.Expiration = DefaultExpiration;
+            this.SlidingExpiration = NoSlidingExpiration;
+            this.LockTimeout = DefaultLockTimeout;
+            this.AcquireLockTimeout = DefaultAcquireLockTimeout;
         }
 
         internal static RedisCacheConfiguration FromPropertiesOrDefaults(string regionName, IDictionary<string, string> properties)
@@ -50,17 +65,23 @@ namespace NHibernate.Caches.Redis
             var expiration = TimeSpan.FromSeconds(
                 PropertiesHelper.GetInt32(Cfg.Environment.CacheDefaultExpiration, properties, (int)DefaultExpiration.TotalSeconds)
             );
-            return new RedisCacheConfiguration(
-                regionName: regionName,
-                expiration: expiration,
-                lockTimeout: DefaultLockTimeout,
-                acquireLockTimeout: DefaultAcquireLockTimeout
-            );
+            return new RedisCacheConfiguration(regionName)
+            {
+                Expiration = expiration
+            };
         }
 
-        internal RedisCacheConfiguration ShallowCloneAndValidate()
+        internal void Validate()
         {
-            return new RedisCacheConfiguration(RegionName, Expiration, LockTimeout, AcquireLockTimeout);
+            if (SlidingExpiration < TimeSpan.Zero || SlidingExpiration > Expiration)
+            {
+                throw new ArgumentException(
+                    String.Format("The sliding expiration '{0}' must be positive and cannot be greater than the expiration '{1}.",
+                        SlidingExpiration,
+                        Expiration
+                    )
+                );
+            }
         }
     }
 }
