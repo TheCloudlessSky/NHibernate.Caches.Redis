@@ -51,6 +51,10 @@ namespace NHibernate.Caches.Redis
         /// </summary>
         public TimeSpan AcquireLockTimeout { get; set; }
 
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        /// <param name="regionName"></param>
         public RedisCacheConfiguration(string regionName)
         {
             this.RegionName = regionName.ThrowIfNull("regionName");
@@ -58,6 +62,20 @@ namespace NHibernate.Caches.Redis
             this.SlidingExpiration = NoSlidingExpiration;
             this.LockTimeout = DefaultLockTimeout;
             this.AcquireLockTimeout = DefaultAcquireLockTimeout;
+        }
+
+        /// <summary>
+        /// Copy constructor.
+        /// </summary>
+        /// <param name="regionName"></param>
+        /// <param name="other"></param>
+        public RedisCacheConfiguration(string regionName, RedisCacheConfiguration other)
+        {
+            RegionName = regionName;
+            Expiration = other.Expiration;
+            SlidingExpiration = other.SlidingExpiration;
+            LockTimeout = other.LockTimeout;
+            AcquireLockTimeout = other.AcquireLockTimeout;
         }
 
         internal static RedisCacheConfiguration FromPropertiesOrDefaults(string regionName, IDictionary<string, string> properties)
