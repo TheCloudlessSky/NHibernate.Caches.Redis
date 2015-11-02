@@ -188,10 +188,11 @@ Changelog
 - Allow getting an item from the cache to reset the expiration (sliding expiration).
   Use the `RedisCacheConfiguration.SlidingExpiration` property. By default, no 
   sliding expiration occurs.
-- Rename `RedisCacheExceptionEventArgs` to `ExceptionEventArgs`.
+- Rename `RedisCacheExceptionEventArgs` to `ExceptionEventArgs` and convert
+  `OnException` to an event: `RedisCacheProviderOptions.Exception`.
 - Add more context (region name and method name) to the `ExceptionEventArgs`.
-- Add `OnLockFailed` and `OnUnlockFailed` to `RedisCacheProviderOptions` for handling
-  when locking/unlocking fails (other than exceptions).
+- Add `LockFailed` and `UnlockFailed` events to `RedisCacheProviderOptions` for
+  handling when locking/unlocking fails (other than exceptions).
 
 ### 2.0.0
 
