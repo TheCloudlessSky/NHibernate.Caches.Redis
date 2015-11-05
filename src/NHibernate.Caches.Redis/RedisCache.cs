@@ -392,7 +392,7 @@ end
 
                 if (!wasLockReleased)
                 {
-                    log.WarnFormat("attempted to unlock '{0}' but it could not be relased (maybe timed out or was cleared in Redis)", lockData);
+                    log.WarnFormat("attempted to unlock '{0}' but it could not be released (it maybe timed out or was cleared in Redis)", lockData);
 
                     var unlockFailedEventArgs = new UnlockFailedEventArgs(
                         RegionName, key, lockData.LockKey, lockData.LockValue
