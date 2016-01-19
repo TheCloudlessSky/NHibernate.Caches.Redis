@@ -207,8 +207,8 @@ Changelog
 - Customize which database the Redis connection uses with the `Database` option.
 - The cache key no longer duplicates the region prefix. In previous
   versions, caching an object with the type `MyApp.Models.Blog` and a region
-  prefix of `v2` would use the key `v2:NHibernate-Cache:v2.ProcedureFlow.Core.Models.User:keys`.
-  The key is now `v2:NHibernate-Cache:ProcedureFlow.Core.Models.User:keys`.
+  prefix of `v2` would use the key `v2:NHibernate-Cache:v2.MyApp.Models.Blog:keys`.
+  The key is now `v2:NHibernate-Cache:MyApp.Models.Blog:keys`.
 - Allow the lock value to be customized. This is useful if you want to store
   information such as what machine/process generated the lock to help with
   debugging.
