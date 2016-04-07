@@ -71,7 +71,7 @@ RedisCacheProvider.SetOptions(new RedisCacheProviderOptions()
     Serializer = new NetDataContractCacheSerializer(),
     CacheConfigurations = new[]
     {
-        new RedisCacheConfiguration("BlogPost", expiration: TimeSpan.FromSeconds(9))
+        new RedisCacheConfiguration("BlogPost") { Expiration = TimeSpan.FromSeconds(9) }
     }
 });
 ```
