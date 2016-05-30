@@ -23,7 +23,7 @@ namespace NHibernate.Caches.Redis
         private static readonly LuaScript getScript = LuaScript.Prepare(@"
 if redis.call('sismember', @setOfActiveKeysKey, @key) == 1 then
     local result = redis.call('get', @key)
-    if result == nil then
+    if (result==nil or (type(result) == 'boolean' and not result)) then
         redis.call('srem', @setOfActiveKeysKey, @key)
     end
     return result

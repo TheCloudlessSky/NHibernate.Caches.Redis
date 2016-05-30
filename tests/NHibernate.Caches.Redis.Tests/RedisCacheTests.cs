@@ -375,5 +375,34 @@ namespace NHibernate.Caches.Redis.Tests
 
             Assert.Equal(1, lockFailedCounter);
         }
-    }
+
+		/// <summary>
+		/// Make sure key reference is removed from :keys via GET after expiry
+		/// </summary>
+		[Fact]
+		void Get_for_expired_item_removes_it_from_keys()
+		{
+			var config = new RedisCacheConfiguration("region")
+			{
+				Expiration = TimeSpan.FromMilliseconds(100),
+				SlidingExpiration = RedisCacheConfiguration.NoSlidingExpiration
+			};
+			var firstKey = 1;
+			var secondKey = 2;
+			var sut = new RedisCache(config, ConnectionMultiplexer, options);
+			var setOfActiveKeysKey = sut.CacheNamespace.GetSetOfActiveKeysKey();
+			var firstCacheKey = sut.CacheNamespace.GetKey(firstKey);
+			var secondCacheKey = sut.CacheNamespace.GetKey(secondKey);
+			sut.Put(firstKey, new Person("John Doe", 10));
+			Assert.True(GetDatabase().SetContains(setOfActiveKeysKey, firstCacheKey));//first key reference exists in :keys
+			Thread.Sleep(TimeSpan.FromMilliseconds(100));
+			sut.Put(secondKey, new Person("John Doe The Second", 12));
+			Assert.Null(sut.Get(firstKey));//this should trigger deletion of first key reference from :keys
+			Assert.False(GetDatabase().SetContains(setOfActiveKeysKey, firstCacheKey));//first key reference is removed from :keys
+			Assert.True(GetDatabase().SetContains(setOfActiveKeysKey, secondCacheKey));//first key reference exists in :keys
+			Thread.Sleep(TimeSpan.FromMilliseconds(100));
+			Assert.Null(sut.Get(secondKey));//this should trigger deletion of second key reference from :keys
+			Assert.False(GetDatabase().SetContains(setOfActiveKeysKey, secondCacheKey));//second key reference is removed from :keys
+		}
+	}
 }
