@@ -122,6 +122,27 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
+        void Get_after_item_has_expired_removes_the_key_from_set_of_all_keys()
+        {
+            const int key = 1;
+            var config = new RedisCacheConfiguration("region")
+            {
+                Expiration = TimeSpan.FromMilliseconds(500),
+                SlidingExpiration = RedisCacheConfiguration.NoSlidingExpiration
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+            sut.Put(key, new Person("John Doe", 20));
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(600));
+            var result = sut.Get(key);
+
+            var setOfActiveKeysKey = sut.CacheNamespace.GetSetOfActiveKeysKey();
+            var cacheKey = sut.CacheNamespace.GetKey(key);
+            var isKeyStillTracked = Redis.SetContains(setOfActiveKeysKey, cacheKey);
+            Assert.False(isKeyStillTracked);
+        }
+
+        [Fact]
         void Get_when_sliding_expiration_not_set_does_not_extend_the_expiration()
         {
             var config = new RedisCacheConfiguration("region")
@@ -177,7 +198,7 @@ namespace NHibernate.Caches.Redis.Tests
             var expiry = Redis.KeyTimeToLive(cacheKey);
             Assert.InRange(expiry.Value, TimeSpan.FromMilliseconds(480), TimeSpan.FromMilliseconds(500));
         }
-
+        
         [Fact]
         void Put_and_Get_into_different_cache_regions()
         {
@@ -375,34 +396,5 @@ namespace NHibernate.Caches.Redis.Tests
 
             Assert.Equal(1, lockFailedCounter);
         }
-
-		/// <summary>
-		/// Make sure key reference is removed from :keys via GET after expiry
-		/// </summary>
-		[Fact]
-		void Get_for_expired_item_removes_it_from_keys()
-		{
-			var config = new RedisCacheConfiguration("region")
-			{
-				Expiration = TimeSpan.FromMilliseconds(100),
-				SlidingExpiration = RedisCacheConfiguration.NoSlidingExpiration
-			};
-			var firstKey = 1;
-			var secondKey = 2;
-			var sut = new RedisCache(config, ConnectionMultiplexer, options);
-			var setOfActiveKeysKey = sut.CacheNamespace.GetSetOfActiveKeysKey();
-			var firstCacheKey = sut.CacheNamespace.GetKey(firstKey);
-			var secondCacheKey = sut.CacheNamespace.GetKey(secondKey);
-			sut.Put(firstKey, new Person("John Doe", 10));
-			Assert.True(GetDatabase().SetContains(setOfActiveKeysKey, firstCacheKey));//first key reference exists in :keys
-			Thread.Sleep(TimeSpan.FromMilliseconds(100));
-			sut.Put(secondKey, new Person("John Doe The Second", 12));
-			Assert.Null(sut.Get(firstKey));//this should trigger deletion of first key reference from :keys
-			Assert.False(GetDatabase().SetContains(setOfActiveKeysKey, firstCacheKey));//first key reference is removed from :keys
-			Assert.True(GetDatabase().SetContains(setOfActiveKeysKey, secondCacheKey));//first key reference exists in :keys
-			Thread.Sleep(TimeSpan.FromMilliseconds(100));
-			Assert.Null(sut.Get(secondKey));//this should trigger deletion of second key reference from :keys
-			Assert.False(GetDatabase().SetContains(setOfActiveKeysKey, secondCacheKey));//second key reference is removed from :keys
-		}
-	}
+    }
 }
