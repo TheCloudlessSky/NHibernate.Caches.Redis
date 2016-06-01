@@ -81,11 +81,11 @@ namespace NHibernate.Caches.Redis.Tests
 
         private void CreateDatabase(SqlConnection connection)
         {
-            // Minimum DB size is 2MB on <= SQL 2008 R2 and 3MB >= SQL 2012.
+            // Minimum DB size is 2MB on <= SQL 2008 R2, 3MB on SQL 2012 and 5MB >= SQL 2014.
             var create = @"create database [{0}] on PRIMARY";
-            create += @" ( name = N'{0}', filename = N'{1}', size = 3072KB, maxsize = unlimited, filegrowth = 10% ) ";
+            create += @" ( name = N'{0}', filename = N'{1}', size = 5MB, maxsize = unlimited, filegrowth = 10% ) ";
             create += @" log on ";
-            create += @" ( name = N'{0}_log', filename = N'{2}', size = 1024KB, maxsize = 2048GB, filegrowth = 10% ) ";
+            create += @" ( name = N'{0}_log', filename = N'{2}', size = 1MB, maxsize = 2048GB, filegrowth = 10% ) ";
 
             using (var cmd = connection.CreateCommand())
             {
