@@ -12,8 +12,6 @@ namespace NHibernate.Caches.Redis
 {
     public class RedisCache : ICache
     {
-        private const string cacheNamespacePrefix = "NHibernate-Cache:";
-
         private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCache));
 
         // The acquired locks do not need to be distributed into Redis because
@@ -120,7 +118,7 @@ end
                 RegionName, expiration, lockTimeout, acquireLockTimeout
             );
 
-            CacheNamespace = new RedisNamespace(cacheNamespacePrefix + RegionName);
+            CacheNamespace = new RedisNamespace(options.CacheNamespacePrefix + RegionName);
         }
 
         public long NextTimestamp()
