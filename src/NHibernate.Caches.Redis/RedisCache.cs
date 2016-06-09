@@ -118,7 +118,7 @@ end
                 RegionName, expiration, lockTimeout, acquireLockTimeout
             );
 
-            CacheNamespace = new RedisNamespace(options.CacheNamespacePrefix + RegionName);
+            CacheNamespace = new RedisNamespace(options.KeyPrefix + RegionName);
         }
 
         public long NextTimestamp()

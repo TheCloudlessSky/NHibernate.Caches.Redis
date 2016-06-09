@@ -59,11 +59,11 @@ namespace NHibernate.Caches.Redis
         public IEnumerable<RedisCacheConfiguration> CacheConfigurations { get; set; }
 
         /// <summary>
-        /// Cache namespace prefix for Redis
-        /// Defaults to "NHibernate-Cache:"
-        /// If NHibernate.Caches.Redis is the only user of given Redis Database, can be set to NULL to reduce key length
+        /// Defines the prefix used for all cache keys. The default value is "NHibernate-Cache:".
+        /// If Redis is only used for NHibernate caching, you can set this to an empty
+        /// string to reduce Redis memory.
         /// </summary>
-        public string CacheNamespacePrefix { get; set; } = "NHibernate-Cache:";
+        public string KeyPrefix { get; set; }
 
 	    public RedisCacheProviderOptions()
         {
@@ -72,6 +72,7 @@ namespace NHibernate.Caches.Redis
             LockValueFactory = new GuidLockValueFactory();
             Database = 0;
             CacheConfigurations = Enumerable.Empty<RedisCacheConfiguration>();
+            KeyPrefix = "NHibernate-Cache:";
         }
 
         // Copy constructor.
