@@ -13,8 +13,29 @@ namespace NHibernate.Caches.Redis
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
         public static readonly TimeSpan DefaultAcquireLockTimeout = DefaultLockTimeout;
         public static readonly TimeSpan NoSlidingExpiration = TimeSpan.Zero;
+        public static readonly bool DefaultSetOfActiveKeysEnabled = true;
 
         public string RegionName { get; private set; }
+
+        /// <summary>
+        /// Gets or sets whether or not to keep a list of active keys in the
+        /// cache. Defaults to true.
+        ///
+        /// By default, all cache keys are stored in a Redis set. This set is
+        /// used to invalidate any non-expired values in the cache when the
+        /// Clear() method is called.
+        ///
+        /// The keys in the set are only ever removed in two situations:
+        ///     1) the Clear() method is called, or
+        ///     2) a cached value is requested after it has expired.
+        ///
+        /// If your cache experiences a lot of churn and you never explicitly
+        /// clear the cache, the set of active keys will eventually fill up
+        /// the entire cache. Disabling the set of active keys functionality
+        /// can help in this situation, but you will not be able to use the
+        /// Clear() method to invalidate your cache.
+        /// </summary>
+        public bool SetOfActiveKeysEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the duration that the item remains in the cache.
@@ -62,6 +83,7 @@ namespace NHibernate.Caches.Redis
             this.SlidingExpiration = NoSlidingExpiration;
             this.LockTimeout = DefaultLockTimeout;
             this.AcquireLockTimeout = DefaultAcquireLockTimeout;
+            this.SetOfActiveKeysEnabled = DefaultSetOfActiveKeysEnabled;
         }
 
         /// <summary>
@@ -76,6 +98,7 @@ namespace NHibernate.Caches.Redis
             SlidingExpiration = other.SlidingExpiration;
             LockTimeout = other.LockTimeout;
             AcquireLockTimeout = other.AcquireLockTimeout;
+            SetOfActiveKeysEnabled = other.SetOfActiveKeysEnabled;
         }
 
         internal static RedisCacheConfiguration FromPropertiesOrDefaults(string regionName, IDictionary<string, string> properties)

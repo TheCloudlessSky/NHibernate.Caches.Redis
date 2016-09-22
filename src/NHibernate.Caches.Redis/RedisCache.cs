@@ -69,6 +69,7 @@ end
         private readonly TimeSpan slidingExpiration;
         private readonly TimeSpan lockTimeout;
         private readonly TimeSpan acquireLockTimeout;
+        private readonly bool setOfActiveKeysEnabled;
 
         public string RegionName { get; private set; }
         internal RedisNamespace CacheNamespace { get; private set; }
@@ -109,6 +110,7 @@ end
             slidingExpiration = configuration.SlidingExpiration;
             lockTimeout = configuration.LockTimeout;
             acquireLockTimeout = configuration.AcquireLockTimeout;
+            setOfActiveKeysEnabled = configuration.SetOfActiveKeysEnabled;
 
             this.connectionMultiplexer = connectionMultiplexer.ThrowIfNull("connectionMultiplexer");
             this.options = options.ThrowIfNull("options")
@@ -138,16 +140,24 @@ end
                 var serializedValue = options.Serializer.Serialize(value);
 
                 var cacheKey = CacheNamespace.GetKey(key);
-                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
                 var db = GetDatabase();
 
-                db.ScriptEvaluate(putScript, new
+                if (setOfActiveKeysEnabled)
                 {
-                    key = cacheKey,
-                    setOfActiveKeysKey = setOfActiveKeysKey,
-                    value = serializedValue,
-                    expiration = expiration.TotalMilliseconds
-                }, fireAndForgetFlags);
+                    var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+
+                    db.ScriptEvaluate(putScript, new
+                    {
+                        key = cacheKey,
+                        setOfActiveKeysKey = setOfActiveKeysKey,
+                        value = serializedValue,
+                        expiration = expiration.TotalMilliseconds
+                    }, fireAndForgetFlags);
+                }
+                else
+                {
+                    db.StringSet(cacheKey, serializedValue, expiration);
+                }
             }
             catch (Exception e)
             {
@@ -171,15 +181,23 @@ end
             try
             {
                 var cacheKey = CacheNamespace.GetKey(key);
-                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
-
                 var db = GetDatabase();
 
-                var resultValues = (RedisValue[])db.ScriptEvaluate(getScript, new
+                RedisValue[] resultValues;
+                if (setOfActiveKeysEnabled)
                 {
-                    key = cacheKey,
-                    setOfActiveKeysKey = setOfActiveKeysKey
-                });
+                    var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+
+                    resultValues = (RedisValue[])db.ScriptEvaluate(getScript, new
+                    {
+                        key = cacheKey,
+                        setOfActiveKeysKey = setOfActiveKeysKey
+                    });
+                }
+                else
+                {
+                    resultValues = new[] { db.StringGet(cacheKey) };
+                }
 
                 if (resultValues[0].IsNullOrEmpty)
                 {
@@ -229,14 +247,22 @@ end
             try
             {
                 var cacheKey = CacheNamespace.GetKey(key);
-                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
                 var db = GetDatabase();
 
-                db.ScriptEvaluate(removeScript, new
+                if (setOfActiveKeysEnabled)
                 {
-                    key = cacheKey,
-                    setOfActiveKeysKey = setOfActiveKeysKey
-                }, fireAndForgetFlags);
+                    var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+
+                    db.ScriptEvaluate(removeScript, new
+                    {
+                        key = cacheKey,
+                        setOfActiveKeysKey = setOfActiveKeysKey
+                    }, fireAndForgetFlags);
+                }
+                else
+                {
+                    db.KeyDelete(cacheKey);
+                }
             }
             catch (Exception e)
             {
@@ -257,6 +283,9 @@ end
 
             try
             {
+                if (!setOfActiveKeysEnabled)
+                    throw new RedisCacheException(RegionName, "Cannot clear cache when SetOfActiveKeysEnabled is false.");
+
                 var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
                 var db = GetDatabase();
                 db.KeyDelete(setOfActiveKeysKey, fireAndForgetFlags);

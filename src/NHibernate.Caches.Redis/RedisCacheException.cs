@@ -35,6 +35,12 @@ namespace NHibernate.Caches.Redis
 
         }
 
+        public RedisCacheException(string regionName, string message)
+            : this(message)
+        {
+            this.RegionName = regionName;
+        }
+
         public RedisCacheException(string regionName, string message, Exception innerException)
             : this(message, innerException)
         {
