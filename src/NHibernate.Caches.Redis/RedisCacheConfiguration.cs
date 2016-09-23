@@ -13,7 +13,11 @@ namespace NHibernate.Caches.Redis
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromSeconds(30);
         public static readonly TimeSpan DefaultAcquireLockTimeout = DefaultLockTimeout;
         public static readonly TimeSpan NoSlidingExpiration = TimeSpan.Zero;
-        public static readonly bool DefaultSetOfActiveKeysEnabled = true;
+
+        /// <summary>
+        /// Sets the default value for the SetOfActiveKeysEnabled property.
+        /// </summary>
+        public static bool DefaultSetOfActiveKeysEnabled { get; set; }
 
         public string RegionName { get; private set; }
 
@@ -71,6 +75,11 @@ namespace NHibernate.Caches.Redis
         /// for the item. By default, this is the same as the lock timeout.
         /// </summary>
         public TimeSpan AcquireLockTimeout { get; set; }
+
+        static RedisCacheConfiguration()
+        {
+            DefaultSetOfActiveKeysEnabled = true;
+        }
 
         /// <summary>
         /// Default constructor.
