@@ -61,6 +61,30 @@ namespace NHibernate.Caches.Redis.Tests
         }
 
         [Fact]
+        void Put_adds_the_item_to_the_cache_without_set_of_active_keys()
+        {
+            const int key = 1;
+
+            var config = new RedisCacheConfiguration("region")
+            {
+                SetOfActiveKeysEnabled = false
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+
+            sut.Put(key, new Person("Foo", 10));
+
+            var cacheKey = sut.CacheNamespace.GetKey(key);
+            var data = Redis.StringGet(cacheKey);
+            var person = (Person)options.Serializer.Deserialize(data);
+            Assert.Equal("Foo", person.Name);
+            Assert.Equal(10, person.Age);
+
+            var setOfActiveKeysKey = sut.CacheNamespace.GetSetOfActiveKeysKey();
+            var isKeyStillTracked = Redis.SetContains(setOfActiveKeysKey, cacheKey);
+            Assert.False(isKeyStillTracked);
+        }
+
+        [Fact]
         void Put_sets_an_expiration_on_the_item()
         {
             var config = new RedisCacheConfiguration("region") { Expiration = TimeSpan.FromSeconds(30) };
@@ -77,6 +101,23 @@ namespace NHibernate.Caches.Redis.Tests
         void Get_should_deserialize_data()
         {
             var sut = new RedisCache("region", ConnectionMultiplexer, options);
+            sut.Put(999, new Person("Foo", 10));
+
+            var person = sut.Get(999) as Person;
+
+            Assert.NotNull(person);
+            Assert.Equal("Foo", person.Name);
+            Assert.Equal(10, person.Age);
+        }
+
+        [Fact]
+        void Get_should_work_without_set_of_active_keys()
+        {
+            var config = new RedisCacheConfiguration("region")
+            {
+                SetOfActiveKeysEnabled = false
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
             sut.Put(999, new Person("Foo", 10));
 
             var person = sut.Get(999) as Person;
@@ -240,6 +281,18 @@ namespace NHibernate.Caches.Redis.Tests
             Assert.Null(sut.Get(2));
             Assert.Null(sut.Get(3));
             Assert.Null(sut.Get(4));
+        }
+
+        [Fact]
+        void Clear_should_throw_exception_if_set_of_active_keys_is_disabled()
+        {
+            var config = new RedisCacheConfiguration("region")
+            {
+                SetOfActiveKeysEnabled = false
+            };
+            var sut = new RedisCache(config, ConnectionMultiplexer, options);
+
+            Assert.Throws<RedisCacheException>(() => sut.Clear());
         }
 
         [Fact]
