@@ -16,8 +16,8 @@ namespace NHibernate.Caches.Redis.Tests
     public abstract class IntegrationTestBase : RedisTest
     {
         private const string databaseName = "NHibernateCachesRedisTests";
-        private const string masterConnectionString = @"Server=(local)\SQLExpress;Database=master;Trusted_Connection=True;";
-        private const string connectionString = @"Server=(local)\SQLExpress;Database=" + databaseName + @";Trusted_Connection=True;";
+        private const string masterConnectionString = @"Server=(local);Database=master;Trusted_Connection=True;";
+        private const string connectionString = @"Server=(local);Database=" + databaseName + @";Trusted_Connection=True;";
         private string dataFilePath;
         private string logFilePath;
 
@@ -109,5 +109,15 @@ namespace NHibernate.Caches.Redis.Tests
                 transaction.Commit();
             }
         }
-    }
+
+	    protected async Task UsingSessionAsync(ISessionFactory sessionFactory, Func<ISession,Task> action)
+	    {
+		    using (var session = sessionFactory.OpenSession())
+		    using (var transaction = session.BeginTransaction())
+		    {
+			    await action(session);
+			    transaction.Commit();
+		    }
+	    }
+	}
 }

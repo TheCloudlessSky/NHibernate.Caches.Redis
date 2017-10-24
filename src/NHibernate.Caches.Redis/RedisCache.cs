@@ -10,7 +10,7 @@ using System.Runtime.Caching;
 
 namespace NHibernate.Caches.Redis
 {
-    public class RedisCache : ICache
+    public partial class RedisCache : ICache
     {
         private static readonly IInternalLogger log = LoggerProvider.LoggerFor(typeof(RedisCache));
 
@@ -151,18 +151,23 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not put in cache: regionName='{0}', key='{1}'", RegionName, key);
-
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
-                options.OnException(this, evtArg);
-                if (evtArg.Throw)
-                {
-                    throw new RedisCacheException(RegionName, "Failed to put item in cache. See inner exception.", e);
-                }
+	            HandlePutException(key, e);
             }
         }
 
-        public virtual object Get(object key)
+	    private void HandlePutException(object key, Exception e)
+	    {
+		    log.ErrorFormat("could not put in cache: regionName='{0}', key='{1}'", RegionName, key);
+
+		    var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
+		    options.OnException(this, evtArg);
+		    if (evtArg.Throw)
+		    {
+			    throw new RedisCacheException(RegionName, "Failed to put item in cache. See inner exception.", e);
+		    }
+	    }
+
+	    public virtual object Get(object key)
         {
             key.ThrowIfNull();
 
@@ -207,20 +212,25 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not get from cache: regionName='{0}', key='{1}'", RegionName, key);
+	            HandleGetException(key, e);
 
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
-                options.OnException(this, evtArg);
-                if (evtArg.Throw)
-                {
-                    throw new RedisCacheException(RegionName, "Failed to get item from cache. See inner exception.", e);
-                }
-
-                return null;
+	            return null;
             }
         }
 
-        public virtual void Remove(object key)
+	    private void HandleGetException(object key, Exception e)
+	    {
+		    log.ErrorFormat("could not get from cache: regionName='{0}', key='{1}'", RegionName, key);
+
+		    var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
+		    options.OnException(this, evtArg);
+		    if (evtArg.Throw)
+		    {
+			    throw new RedisCacheException(RegionName, "Failed to get item from cache. See inner exception.", e);
+		    }
+	    }
+
+	    public virtual void Remove(object key)
         {
             key.ThrowIfNull();
 
@@ -240,18 +250,23 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not remove from cache: regionName='{0}', key='{1}'", RegionName, key);
-
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
-                options.OnException(this, evtArg);
-                if (evtArg.Throw)
-                {
-                    throw new RedisCacheException(RegionName, "Failed to remove item from cache. See inner exception.", e);
-                }
+	            HandleRemoveException(key, e);
             }
         }
 
-        public virtual void Clear()
+	    private void HandleRemoveException(object key, Exception e)
+	    {
+		    log.ErrorFormat("could not remove from cache: regionName='{0}', key='{1}'", RegionName, key);
+
+		    var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
+		    options.OnException(this, evtArg);
+		    if (evtArg.Throw)
+		    {
+			    throw new RedisCacheException(RegionName, "Failed to remove item from cache. See inner exception.", e);
+		    }
+	    }
+
+	    public virtual void Clear()
         {
             log.DebugFormat("clear cache: regionName='{0}'", RegionName);
 
@@ -263,18 +278,23 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not clear cache: regionName='{0}'", RegionName);
-
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
-                options.OnException(this, evtArg);
-                if (evtArg.Throw)
-                {
-                    throw new RedisCacheException(RegionName, "Failed to clear cache. See inner exception.", e);
-                }
+	            HandleClearException(e);
             }
         }
 
-        public virtual void Destroy()
+	    private void HandleClearException(Exception e)
+	    {
+		    log.ErrorFormat("could not clear cache: regionName='{0}'", RegionName);
+
+		    var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
+		    options.OnException(this, evtArg);
+		    if (evtArg.Throw)
+		    {
+			    throw new RedisCacheException(RegionName, "Failed to clear cache. See inner exception.", e);
+		    }
+	    }
+
+	    public virtual void Destroy()
         {
             // No-op since Redis is distributed.
             log.DebugFormat("destroying cache: regionName='{0}'", RegionName);
@@ -327,18 +347,23 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not acquire cache lock: regionName='{0}', key='{1}'", RegionName, key);
-
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
-                options.OnException(this, evtArg);
-                if (evtArg.Throw)
-                {
-                    throw new RedisCacheException(RegionName, "Failed to lock item in cache. See inner exception.", e);
-                }
+	            HandleLockException(key, e);
             }
         }
 
-        private bool TryAcquireLock(LockData lockData)
+	    private void HandleLockException(object key, Exception e)
+	    {
+		    log.ErrorFormat("could not acquire cache lock: regionName='{0}', key='{1}'", RegionName, key);
+
+		    var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
+		    options.OnException(this, evtArg);
+		    if (evtArg.Throw)
+		    {
+			    throw new RedisCacheException(RegionName, "Failed to lock item in cache. See inner exception.", e);
+		    }
+	    }
+
+	    private bool TryAcquireLock(LockData lockData)
         {
             var db = GetDatabase();
 
@@ -400,20 +425,25 @@ end
             }
             catch (Exception e)
             {
-                log.ErrorFormat("could not release cache lock: regionName='{0}', key='{1}', lockKey='{2}', lockValue='{3}'",
-                    RegionName, lockData.Key, lockData.LockKey, lockData.LockValue
-                );
-
-                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
-                options.OnException(this, evtArg);
-                if (evtArg.Throw)
-                {
-                    throw new RedisCacheException(RegionName, "Failed to unlock item in cache. See inner exception.", e);
-                }
+	            HandleUnlockException(lockData, e);
             }
         }
 
-        private IDatabase GetDatabase()
+	    private void HandleUnlockException(LockData lockData, Exception e)
+	    {
+		    log.ErrorFormat("could not release cache lock: regionName='{0}', key='{1}', lockKey='{2}', lockValue='{3}'",
+			    RegionName, lockData.Key, lockData.LockKey, lockData.LockValue
+		    );
+
+		    var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
+		    options.OnException(this, evtArg);
+		    if (evtArg.Throw)
+		    {
+			    throw new RedisCacheException(RegionName, "Failed to unlock item in cache. See inner exception.", e);
+		    }
+	    }
+
+	    private IDatabase GetDatabase()
         {
             return connectionMultiplexer.GetDatabase(options.Database);
         }
