@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2005
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NHibernate.Caches.Redis", "src\NHibernate.Caches.Redis\NHibernate.Caches.Redis.csproj", "{1B50164C-DB00-4109-A0D4-E2868ABFEDAF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NHibernate.Caches.Redis.Net40", "src\NHibernate.Caches.Redis.Net40\NHibernate.Caches.Redis.Net40.csproj", "{3F9EC276-318A-4534-A2DC-B4BA2E5DFB57}"
@@ -50,9 +52,12 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{3F9EC276-318A-4534-A2DC-B4BA2E5DFB57} = {F5128A75-1A1D-4585-BB4E-A9E55D12D03C}
 		{1B50164C-DB00-4109-A0D4-E2868ABFEDAF} = {F5128A75-1A1D-4585-BB4E-A9E55D12D03C}
+		{3F9EC276-318A-4534-A2DC-B4BA2E5DFB57} = {F5128A75-1A1D-4585-BB4E-A9E55D12D03C}
 		{A067C7D2-CF09-4F24-9848-5CE10DC48438} = {F0732F96-D774-44A7-B51A-54AC1A278F99}
 		{3BA51CF9-7DCC-4265-A043-F83284D1942A} = {174608AE-6E0A-4774-9DB9-46BC5E3B3C78}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20857053-E631-4A30-A6FD-17B0B47D2478}
 	EndGlobalSection
 EndGlobal
