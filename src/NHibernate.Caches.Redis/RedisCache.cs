@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 using NHibernate.Cache;
 using NHibernate.Util;
@@ -162,6 +163,42 @@ end
             }
         }
 
+        public virtual async Task PutAsync(object key, object value, CancellationToken cancellationToken)
+        {
+            key.ThrowIfNull("key");
+            value.ThrowIfNull("value");
+
+            log.DebugFormat("put in cache: regionName='{0}', key='{1}'", RegionName, key);
+
+            try
+            {
+                var serializedValue = options.Serializer.Serialize(value);
+
+                var cacheKey = CacheNamespace.GetKey(key);
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+                var db = GetDatabase();
+
+                await db.ScriptEvaluateAsync(putScript, new
+                {
+                    key = cacheKey,
+                    setOfActiveKeysKey = setOfActiveKeysKey,
+                    value = serializedValue,
+                    expiration = expiration.TotalMilliseconds
+                }, fireAndForgetFlags);
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not put in cache: regionName='{0}', key='{1}'", RegionName, key);
+
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Put, e);
+                options.OnException(this, evtArg);
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to put item in cache. See inner exception.", e);
+                }
+            }
+        }
+
         public virtual object Get(object key)
         {
             key.ThrowIfNull();
@@ -220,6 +257,64 @@ end
             }
         }
 
+        public virtual async Task<object> GetAsync(object key, CancellationToken cancellationToken)
+        {
+            key.ThrowIfNull();
+
+            log.DebugFormat("get from cache: regionName='{0}', key='{1}'", RegionName, key);
+
+            try
+            {
+                var cacheKey = CacheNamespace.GetKey(key);
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+
+                var db = GetDatabase();
+
+                var resultValues = (RedisValue[])await db.ScriptEvaluateAsync(getScript, new
+                {
+                    key = cacheKey,
+                    setOfActiveKeysKey = setOfActiveKeysKey
+                });
+
+                if (resultValues[0].IsNullOrEmpty)
+                {
+                    log.DebugFormat("cache miss: regionName='{0}', key='{1}'", RegionName, key);
+                    return null;
+                }
+                else
+                {
+                    var serializedResult = resultValues[0];
+
+                    var deserializedValue = options.Serializer.Deserialize(serializedResult);
+
+                    if (deserializedValue != null && slidingExpiration != RedisCacheConfiguration.NoSlidingExpiration)
+                    {
+                        await db.ScriptEvaluateAsync(slidingExpirationScript, new
+                        {
+                            key = cacheKey,
+                            expiration = expiration.TotalMilliseconds,
+                            slidingExpiration = slidingExpiration.TotalMilliseconds
+                        }, fireAndForgetFlags);
+                    }
+
+                    return deserializedValue;
+                }
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not get from cache: regionName='{0}', key='{1}'", RegionName, key);
+
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Get, e);
+                options.OnException(this, evtArg);
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to get item from cache. See inner exception.", e);
+                }
+
+                return null;
+            }
+        }
+
         public virtual void Remove(object key)
         {
             key.ThrowIfNull();
@@ -251,6 +346,37 @@ end
             }
         }
 
+        public virtual async Task RemoveAsync(object key, CancellationToken cancellationToken)
+        {
+            key.ThrowIfNull();
+
+            log.DebugFormat("remove from cache: regionName='{0}', key='{1}'", RegionName, key);
+
+            try
+            {
+                var cacheKey = CacheNamespace.GetKey(key);
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+                var db = GetDatabase();
+
+                await db.ScriptEvaluateAsync(removeScript, new
+                {
+                    key = cacheKey,
+                    setOfActiveKeysKey = setOfActiveKeysKey
+                }, fireAndForgetFlags);
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not remove from cache: regionName='{0}', key='{1}'", RegionName, key);
+
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Remove, e);
+                options.OnException(this, evtArg);
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to remove item from cache. See inner exception.", e);
+                }
+            }
+        }
+
         public virtual void Clear()
         {
             log.DebugFormat("clear cache: regionName='{0}'", RegionName);
@@ -260,6 +386,29 @@ end
                 var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
                 var db = GetDatabase();
                 db.KeyDelete(setOfActiveKeysKey, fireAndForgetFlags);
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not clear cache: regionName='{0}'", RegionName);
+
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Clear, e);
+                options.OnException(this, evtArg);
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to clear cache. See inner exception.", e);
+                }
+            }
+        }
+
+        public virtual async Task ClearAsync(CancellationToken cancellationToken)
+        {
+            log.DebugFormat("clear cache: regionName='{0}'", RegionName);
+
+            try
+            {
+                var setOfActiveKeysKey = CacheNamespace.GetSetOfActiveKeysKey();
+                var db = GetDatabase();
+                await db.KeyDeleteAsync(setOfActiveKeysKey, fireAndForgetFlags);
             }
             catch (Exception e)
             {
@@ -338,6 +487,64 @@ end
             }
         }
 
+        public virtual async Task LockAsync(object key, CancellationToken cancellationToken)
+        {
+            log.DebugFormat("acquiring cache lock: regionName='{0}', key='{1}'", RegionName, key);
+
+            try
+            {
+                var lockKey = CacheNamespace.GetLockKey(key);
+                var shouldRetry = options.AcquireLockRetryStrategy.GetShouldRetry();
+
+                var wasLockAcquired = false;
+                var shouldTryAcquireLock = true;
+
+                while (shouldTryAcquireLock)
+                {
+                    var lockData = new LockData(
+                        key: Convert.ToString(key),
+                        lockKey: lockKey,
+                        // Recalculated each attempt to ensure a unique value.
+                        lockValue: options.LockValueFactory.GetLockValue()
+                    );
+
+                    if (await TryAcquireLockAsync(lockData))
+                    {
+                        wasLockAcquired = true;
+                        shouldTryAcquireLock = false;
+                    }
+                    else
+                    {
+                        var shouldRetryArgs = new ShouldRetryAcquireLockArgs(
+                            RegionName, lockData.Key, lockData.LockKey,
+                            lockData.LockValue, lockTimeout, acquireLockTimeout
+                        );
+                        shouldTryAcquireLock = shouldRetry(shouldRetryArgs);
+                    }
+                }
+
+                if (!wasLockAcquired)
+                {
+                    var lockFailedArgs = new LockFailedEventArgs(
+                        RegionName, key, lockKey,
+                        lockTimeout, acquireLockTimeout
+                    );
+                    options.OnLockFailed(this, lockFailedArgs);
+                }
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not acquire cache lock: regionName='{0}', key='{1}'", RegionName, key);
+
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Lock, e);
+                options.OnException(this, evtArg);
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to lock item in cache. See inner exception.", e);
+                }
+            }
+        }
+
         private bool TryAcquireLock(LockData lockData)
         {
             var db = GetDatabase();
@@ -346,6 +553,25 @@ end
             // LockRelease(). So, avoid any confusion. Besides, LockTake() just
             // calls this anyways.
             var wasLockAcquired = db.StringSet(lockData.LockKey, lockData.LockValue, lockTimeout, When.NotExists);
+
+            if (wasLockAcquired)
+            {
+                // It's ok to use Set() instead of Add() because the lock in 
+                // Redis will cause other clients to wait.
+                acquiredLocks.Set(lockData.Key, lockData, absoluteExpiration: DateTime.UtcNow.Add(lockTimeout));
+            }
+
+            return wasLockAcquired;
+        }
+
+        private async Task<bool> TryAcquireLockAsync(LockData lockData)
+        {
+            var db = GetDatabase();
+
+            // Don't use IDatabase.LockTake() because we don't use the matching
+            // LockRelease(). So, avoid any confusion. Besides, LockTake() just
+            // calls this anyways.
+            var wasLockAcquired = await db.StringSetAsync(lockData.LockKey, lockData.LockValue, lockTimeout, When.NotExists);
 
             if (wasLockAcquired)
             {
@@ -383,6 +609,62 @@ end
                 // Don't use IDatabase.LockRelease() because it uses watch/unwatch
                 // where we prefer an atomic operation (via a script).
                 var wasLockReleased = (bool)db.ScriptEvaluate(unlockScript, new
+                {
+                    lockKey = lockData.LockKey,
+                    lockValue = lockData.LockValue
+                });
+
+                if (!wasLockReleased)
+                {
+                    log.WarnFormat("attempted to unlock '{0}' but it could not be released (it maybe timed out or was cleared in Redis)", lockData);
+
+                    var unlockFailedEventArgs = new UnlockFailedEventArgs(
+                        RegionName, key, lockData.LockKey, lockData.LockValue
+                    );
+                    options.OnUnlockFailed(this, unlockFailedEventArgs);
+                }
+            }
+            catch (Exception e)
+            {
+                log.ErrorFormat("could not release cache lock: regionName='{0}', key='{1}', lockKey='{2}', lockValue='{3}'",
+                    RegionName, lockData.Key, lockData.LockKey, lockData.LockValue
+                );
+
+                var evtArg = new ExceptionEventArgs(RegionName, RedisCacheMethod.Unlock, e);
+                options.OnException(this, evtArg);
+                if (evtArg.Throw)
+                {
+                    throw new RedisCacheException(RegionName, "Failed to unlock item in cache. See inner exception.", e);
+                }
+            }
+        }
+
+        public virtual async Task UnlockAsync(object key, CancellationToken cancellationToken)
+        {
+            // Use Remove() instead of Get() because we are releasing the lock
+            // anyways.
+            var lockData = acquiredLocks.Remove(Convert.ToString(key)) as LockData;
+            if (lockData == null)
+            {
+                log.WarnFormat("attempted to unlock '{0}' but a previous lock was not acquired or timed out", key);
+                var unlockFailedEventArgs = new UnlockFailedEventArgs(
+                    RegionName, key, lockKey: null, lockValue: null
+                );
+                options.OnUnlockFailed(this, unlockFailedEventArgs);
+                return;
+            }
+
+            log.DebugFormat("releasing cache lock: regionName='{0}', key='{1}', lockKey='{2}', lockValue='{3}'",
+                RegionName, lockData.Key, lockData.LockKey, lockData.LockValue
+            );
+
+            try
+            {
+                var db = GetDatabase();
+
+                // Don't use IDatabase.LockRelease() because it uses watch/unwatch
+                // where we prefer an atomic operation (via a script).
+                var wasLockReleased = (bool)await db.ScriptEvaluateAsync(unlockScript, new
                 {
                     lockKey = lockData.LockKey,
                     lockValue = lockData.LockValue
