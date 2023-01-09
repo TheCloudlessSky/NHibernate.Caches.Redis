@@ -129,7 +129,7 @@ public class RequestRecoveryRedisCache : RedisCache
     public override void Lock(object key)
     {
         if (HasFailedForThisHttpRequest()) return;
-        base.Lock(key);
+        base.Lock(key); // TODO
     }
 
     public override void Unlock(object key)
